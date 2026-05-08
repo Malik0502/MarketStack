@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>2b9f5946-1f63-4202-b3db-51453a27a73b</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="NSwag.AspNetCore" Version="14.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarketStack.Common\MarketStack.Common.csproj" />
+    <ProjectReference Include="..\MarketStack.Data\MarketStack.Data.csproj" />
+    <ProjectReference Include="..\MarketStack.Library\MarketStack.Library.csproj" />
+    <ProjectReference Include="..\MarketStack.Logic\MarketStack.Logic.csproj" />
+  </ItemGroup>
+
+</Project>

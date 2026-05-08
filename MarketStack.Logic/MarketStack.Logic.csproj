@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarketStack.Common\MarketStack.Common.csproj" />
+    <ProjectReference Include="..\MarketStack.Logic.Contracts\MarketStack.Logic.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

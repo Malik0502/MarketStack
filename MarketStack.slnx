@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/Api/">
+    <Project Path="MarketStack.Api/MarketStack.Api.csproj" />
+  </Folder>
+  <Folder Name="/Business/">
+    <Project Path="MarketStack.Logic.Contracts/MarketStack.Logic.Contracts.csproj" Id="0a91d600-4f59-476f-8011-0528d2e3ecf6" />
+    <Project Path="MarketStack.Logic/MarketStack.Logic.csproj" Id="0928f036-d8cc-49ae-add8-b76f9686ca30" />
+  </Folder>
+  <Folder Name="/Common/">
+    <Project Path="MarketStack.Common/MarketStack.Common.csproj" Id="5a72a901-d9f9-46f3-8179-eac472561718" />
+  </Folder>
+  <Folder Name="/Infrastructure/">
+    <Project Path="MarketStack.Data.Contracts/MarketStack.Data.Contracts.csproj" Id="044b3a1a-b499-4a58-b987-7441b1349bab" />
+    <Project Path="MarketStack.Data/MarketStack.Data.csproj" Id="5d632202-011d-4160-9e47-da6b9788bd9d" />
+  </Folder>
+  <Folder Name="/Library/">
+    <Project Path="MarketStack.Library.Contracts/MarketStack.Library.Contracts.csproj" Id="212dd4b5-b355-4ab7-9b8e-9ed7e3634ab9" />
+    <Project Path="MarketStack.Library/MarketStack.Library.csproj" Id="bea1354e-8446-4836-ae40-a636753767f0" />
+  </Folder>
+</Solution>
