@@ -10,19 +10,31 @@ namespace MarketStack.Api.Controller
     {
         // GET: api/<ReceiptController>
         [HttpGet("ReceiptInfo")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<ActionResult<ReceiptPageInfoDto>> Get()
         {
             LidlReceiptClient client = new LidlReceiptClient();
             var result = await client.GetReceiptsAsync();
 
+            if (result == null)
+                return NoContent();
+            
             return Ok(result);
         }
-
-        // GET api/<ReceiptController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        
+        [HttpGet("Token")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<ActionResult<string>> GetToken()
         {
-            return "value";
+            LidlReceiptClient client = new LidlReceiptClient();
+            var result = await client.GetAuthTokenAsync();
+            
+            if (result == null)
+                return NoContent();
+            
+            return Ok(result);
         }
 
         // POST api/<ReceiptController>

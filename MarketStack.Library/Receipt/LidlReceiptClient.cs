@@ -3,19 +3,60 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
+using MarketStack.Library.Contracts.Token;
 
 namespace MarketStack.Library.Receipt
 {
     public class LidlReceiptClient : IReceiptClient
     {
-        private const string AUTH_TOKEN_API_URL = "https://www.lidl.de/mla/api/v1/token";
-        private const string ALL_RECEIPT_API_URL = "https://www.lidl.de/mre/api/v1/tickets?country";
+        private const string AuthTokenApiUrl = "https://www.lidl.de/mla/api/v1/token";
+        private const string AllReceiptApiUrl = "https://www.lidl.de/mre/api/v1/tickets?country";
 
-        private static HttpClient _httpClient = new();
-        
-        public async Task<string> GetAuthTokenAsync()
+        private static HttpClient _httpClient;
+        private static HttpClientHandler _httpClientHandler;
+
+        private static string _authToken = string.Empty;
+        public LidlReceiptClient()
         {
-            throw new NotImplementedException();
+            _httpClientHandler = new HttpClientHandler()
+            {
+                UseCookies = true,
+                CookieContainer = new CookieContainer()
+            };
+            _httpClient = new HttpClient(_httpClientHandler);
+        }
+        
+        public async Task<string?> GetAuthTokenAsync()
+        {
+            try
+            {
+                _httpClientHandler.CookieContainer.Add(new Uri("https://www.lidl.de"),
+                    new Cookie("authToken", _authToken));
+            
+                var tokenResponse = await _httpClient.GetAsync("https://www.lidl.de/mla/api/v1/token");
+            
+                var json = await tokenResponse.Content.ReadAsStringAsync();
+            
+                var serializeOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = true
+                };
+            
+                var token = JsonSerializer.Deserialize<LidlApiAuth>(json, serializeOptions);
+
+                if (token == null || string.IsNullOrEmpty(token.Token)) 
+                    return null;
+            
+                _authToken = token.Token;
+            
+                return _authToken;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
         }
 
         public async Task<ReceiptDto> GetReceiptAsync()
@@ -25,22 +66,19 @@ namespace MarketStack.Library.Receipt
 
         public async Task<ReceiptPageInfoDto?> GetReceiptsAsync()
         {
-            var authToken = string.Empty;
-
             var pageNumber = 1;
             
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authToken);
+            var token =  await GetAuthTokenAsync();
+
+            if (token == null)
+                return null;
+            
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             
             var apiUrl = "https://www.lidl.de/mre/api/v1/tickets?country=DE&page=";
             
             var firstPageResponse = await _httpClient.GetAsync(apiUrl +  pageNumber);
-
-            var serializeOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            };
-            ;
+            
             if (!firstPageResponse.IsSuccessStatusCode)
             {
                 return null;
@@ -48,6 +86,11 @@ namespace MarketStack.Library.Receipt
             
             var json = await firstPageResponse.Content.ReadAsStringAsync();
             
+            var serializeOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true
+            };
             var receiptPageInfo = JsonSerializer.Deserialize<ReceiptPageInfoDto>(json, serializeOptions);
 
             if (receiptPageInfo == null)
