@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
     <PackageReference Include="NSwag.AspNetCore" Version="14.7.1" />
   </ItemGroup>
 
@@ -19,6 +20,10 @@
     <ProjectReference Include="..\MarketStack.Data\MarketStack.Data.csproj" />
     <ProjectReference Include="..\MarketStack.Library\MarketStack.Library.csproj" />
     <ProjectReference Include="..\MarketStack.Logic\MarketStack.Logic.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controller\" />
   </ItemGroup>
 
 </Project>
