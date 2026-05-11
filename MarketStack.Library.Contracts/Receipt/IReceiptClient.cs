@@ -6,8 +6,8 @@ namespace MarketStack.Library.Contracts.Receipt
     {
         public Task<string?> GetAuthTokenAsync();
         
-        public Task<ReceiptDto> GetReceiptAsync();
+        public Task<ReceiptDto?> GetReceiptAsync(string ticketId, string languageCode);
         
-        public Task<ReceiptPageInfoDto?> GetReceiptsAsync();
+        public Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync();
     }
 }

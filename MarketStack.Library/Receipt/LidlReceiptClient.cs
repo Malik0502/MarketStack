@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using MarketStack.Library.Contracts.Receipt;
@@ -9,8 +10,10 @@ namespace MarketStack.Library.Receipt
 {
     public class LidlReceiptClient : IReceiptClient
     {
-        private const string AuthTokenApiUrl = "https://www.lidl.de/mla/api/v1/token";
-        private const string AllReceiptApiUrl = "https://www.lidl.de/mre/api/v1/tickets?country";
+        private const string BaseApiUrl = "https://www.lidl.de";
+        private const string AuthTokenApiUrl = $"{BaseApiUrl}/mla/api/v1/token";
+        private const string AllReceiptApiUrl = $"{BaseApiUrl}/mre/api/v1/tickets?country";
+        private const string ReceiptBaseUrl = $"{BaseApiUrl}/mre/api/v1/tickets";
 
         private static HttpClient _httpClient;
         private static HttpClientHandler _httpClientHandler;
@@ -30,10 +33,10 @@ namespace MarketStack.Library.Receipt
         {
             try
             {
-                _httpClientHandler.CookieContainer.Add(new Uri("https://www.lidl.de"),
+                _httpClientHandler.CookieContainer.Add(new Uri(BaseApiUrl),
                     new Cookie("authToken", _authToken));
             
-                var tokenResponse = await _httpClient.GetAsync("https://www.lidl.de/mla/api/v1/token");
+                var tokenResponse = await _httpClient.GetAsync(AuthTokenApiUrl);
             
                 var json = await tokenResponse.Content.ReadAsStringAsync();
             
@@ -59,12 +62,44 @@ namespace MarketStack.Library.Receipt
             }
         }
 
-        public async Task<ReceiptDto> GetReceiptAsync()
+        public async Task<ReceiptDto?> GetReceiptAsync(string ticketId, string languageCode)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var token = await GetAuthTokenAsync();
+                if (token == null)
+                    return null;
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var culture = CultureInfo.GetCultureInfo(languageCode);
+
+                var apiUrl = $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
+
+                var response = await _httpClient.GetAsync(apiUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+            }
+            catch(CultureNotFoundException e)
+            {
+                Console.WriteLine("Could not found a culture from the given language code.");
+                return null;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
+
+            return null;
         }
 
-        public async Task<ReceiptPageInfoDto?> GetReceiptsAsync()
+        public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
         {
             var pageNumber = 1;
             
@@ -75,9 +110,9 @@ namespace MarketStack.Library.Receipt
             
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             
-            var apiUrl = "https://www.lidl.de/mre/api/v1/tickets?country=DE&page=";
+            var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
             
-            var firstPageResponse = await _httpClient.GetAsync(apiUrl +  pageNumber);
+            var firstPageResponse = await _httpClient.GetAsync(apiUrl + pageNumber);
             
             if (!firstPageResponse.IsSuccessStatusCode)
             {
