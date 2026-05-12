@@ -19,6 +19,7 @@ namespace MarketStack.Library.Receipt
         private static HttpClientHandler _httpClientHandler;
 
         private static string _authToken = string.Empty;
+        
         public LidlReceiptClient()
         {
             _httpClientHandler = new HttpClientHandler()
@@ -33,20 +34,12 @@ namespace MarketStack.Library.Receipt
         {
             try
             {
-                _httpClientHandler.CookieContainer.Add(new Uri(BaseApiUrl),
-                    new Cookie("authToken", _authToken));
-            
-                var tokenResponse = await _httpClient.GetAsync(AuthTokenApiUrl);
-            
-                var json = await tokenResponse.Content.ReadAsStringAsync();
-            
-                var serializeOptions = new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    WriteIndented = true
-                };
-            
-                var token = JsonSerializer.Deserialize<LidlApiAuth>(json, serializeOptions);
+                var json = await ExtractJsonFromApiCallAsync(AuthTokenApiUrl);
+
+                if (string.IsNullOrEmpty(json))
+                    return null;
+
+                var token = DeserializeJson<LidlApiAuth>(json);
 
                 if (token == null || string.IsNullOrEmpty(token.Token)) 
                     return null;
@@ -70,24 +63,20 @@ namespace MarketStack.Library.Receipt
                 if (token == null)
                     return null;
 
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
                 var culture = CultureInfo.GetCultureInfo(languageCode);
 
                 var apiUrl = $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
 
-                var response = await _httpClient.GetAsync(apiUrl);
+                var json = await ExtractJsonFromApiCallAsync(apiUrl);
 
-                if (!response.IsSuccessStatusCode)
-                {
+                if (string.IsNullOrEmpty(json))
                     return null;
-                }
 
-                var json = await response.Content.ReadAsStringAsync();
+                var test = DeserializeJson<ReceiptDto>(json);
             }
             catch(CultureNotFoundException e)
             {
-                Console.WriteLine("Could not found a culture from the given language code.");
+                Console.WriteLine($"Could not found a culture from the given language code: {e}");
                 return null;
             }
             catch (Exception e)
@@ -99,44 +88,39 @@ namespace MarketStack.Library.Receipt
             return null;
         }
 
+        
+
         public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
         {
-            var pageNumber = 1;
+            const int firstPage = 1;
             
             var token =  await GetAuthTokenAsync();
 
-            if (token == null)
+            if (string.IsNullOrEmpty(token))
                 return null;
             
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
             
             var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
-            
-            var firstPageResponse = await _httpClient.GetAsync(apiUrl + pageNumber);
-            
-            if (!firstPageResponse.IsSuccessStatusCode)
-            {
+
+            var jsonResponse = await ExtractJsonFromApiCallAsync(apiUrl + firstPage);
+
+            if (string.IsNullOrEmpty(jsonResponse))
                 return null;
-            }
-            
-            var json = await firstPageResponse.Content.ReadAsStringAsync();
-            
-            var serializeOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = true
-            };
-            var receiptPageInfo = JsonSerializer.Deserialize<ReceiptPageInfoDto>(json, serializeOptions);
+
+            var receiptPageInfo = DeserializeJson<ReceiptPageInfoDto>(jsonResponse);
 
             if (receiptPageInfo == null)
                 return null;
             
-            for (int i = 2; i <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; i++)
+            for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
             {
-                var response = await _httpClient.GetAsync(apiUrl + i);
-                var jsonString = await response.Content.ReadAsStringAsync();
-                
-                var receiptInfo =  JsonSerializer.Deserialize<ReceiptPageInfoDto>(jsonString, serializeOptions);
+                var json = await ExtractJsonFromApiCallAsync(apiUrl + page);
+
+                if (string.IsNullOrEmpty(json))
+                    continue;
+
+                var receiptInfo = DeserializeJson<ReceiptPageInfoDto>(json);
 
                 if (receiptInfo == null)
                     continue;
@@ -145,6 +129,44 @@ namespace MarketStack.Library.Receipt
             }
             
             return receiptPageInfo;
+        }
+
+        private static async Task<string?> ExtractJsonFromApiCallAsync(string apiUrl)
+        {
+            var response = await FetchAsync(apiUrl);
+
+            if (response == null)
+                return null;
+
+            var json = await response.Content.ReadAsStringAsync();
+
+            return json;
+        }
+
+        private static async Task<HttpResponseMessage?> FetchAsync(string apiUrl)
+        {
+            _httpClientHandler.CookieContainer.Add(new Uri(BaseApiUrl),
+                new Cookie("authToken", _authToken));
+
+            var response = await _httpClient.GetAsync(apiUrl);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return response;
+        }
+
+        private static T? DeserializeJson<T>(string json) where T : class
+        {
+            var serializeOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true
+            };
+
+            var result = JsonSerializer.Deserialize<T>(json, serializeOptions);
+
+            return result;
         }
     }
 }
