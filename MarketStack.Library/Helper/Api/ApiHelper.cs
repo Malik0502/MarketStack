@@ -1,4 +1,6 @@
-﻿namespace MarketStack.Library.Helper.Json;
+﻿using MarketStack.Library.Helper.Json;
+
+namespace MarketStack.Library.Helper.Api;
 
 public static class ApiHelper
 {
@@ -6,7 +8,7 @@ public static class ApiHelper
     {
         var response = await FetchAsync(apiUrl, httpClient);
 
-        var json = await JsonExtractor.ExtractResponseAsJsonAsync(response);
+        var json = await JsonHelper.ExtractResponseAsJsonAsync(response);
 
         return json;
     }

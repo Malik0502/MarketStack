@@ -10,8 +10,6 @@ public class ReceiptItemDto
 
     public required int Quantity { get; set; }
 
-    public required string Currency { get; set; }
-
     public required char TaxType { get; set; }
 
     public required decimal TaxAmount { get; set; }

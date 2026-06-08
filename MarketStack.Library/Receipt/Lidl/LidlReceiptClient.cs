@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Library.Contracts.Token;
+using MarketStack.Library.Helper.Api;
 using MarketStack.Library.Helper.Json;
 
 namespace MarketStack.Library.Receipt.Lidl
@@ -18,7 +19,8 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = "";
+        private static string _authToken =
+            "";
 
         private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 
@@ -35,7 +37,7 @@ namespace MarketStack.Library.Receipt.Lidl
             httpClientHandler.CookieContainer.Add(new Uri(BaseApiUrl),
                 new Cookie("authToken", _authToken));
         }
-        
+
         public async Task<string?> GetAuthTokenAsync()
         {
             try
@@ -45,13 +47,13 @@ namespace MarketStack.Library.Receipt.Lidl
                 if (string.IsNullOrEmpty(json))
                     return null;
 
-                var token = JsonExtractor.DeserializeJson<LidlApiAuth>(json);
+                var token = JsonHelper.DeserializeJson<LidlApiAuth>(json);
 
-                if (token == null || string.IsNullOrEmpty(token.Token)) 
+                if (token == null || string.IsNullOrEmpty(token.Token))
                     return null;
-            
+
                 _authToken = token.Token;
-            
+
                 return _authToken;
             }
             catch (Exception e)
@@ -60,16 +62,15 @@ namespace MarketStack.Library.Receipt.Lidl
                 return null;
             }
         }
-
-
-        // TODO: Build HTML Parser
+        
         public async Task<ReceiptDto?> GetReceiptAsync(string ticketId, string languageCode)
         {
             try
             {
                 var culture = CultureInfo.GetCultureInfo(languageCode);
 
-                var apiUrl = $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
+                var apiUrl =
+                    $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
 
                 var json = await ApiHelper.FetchJsonAsync(apiUrl, _httpClient);
 
@@ -83,9 +84,10 @@ namespace MarketStack.Library.Receipt.Lidl
                     .GetProperty("htmlPrintedReceipt")
                     .GetString()!;
 
-                var test = ParseHtml(htmlPrintedReceipt);
+                var receiptItemsAsDictionary = ParseHtml(htmlPrintedReceipt);
+                var receiptItems = ParseToReceipt(receiptItemsAsDictionary);
             }
-            catch(CultureNotFoundException e)
+            catch (CultureNotFoundException e)
             {
                 Console.WriteLine($"Could not found a culture from the given language code: {e}");
                 return null;
@@ -110,11 +112,11 @@ namespace MarketStack.Library.Receipt.Lidl
             if (string.IsNullOrEmpty(json))
                 return null;
 
-            var receiptPageInfo = JsonExtractor.DeserializeJson<ReceiptPageInfoDto>(json);
+            var receiptPageInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(json);
 
             if (receiptPageInfo == null)
                 return null;
-            
+
             for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
             {
                 json = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
@@ -122,23 +124,69 @@ namespace MarketStack.Library.Receipt.Lidl
                 if (string.IsNullOrEmpty(json))
                     continue;
 
-                var receiptInfo = JsonExtractor.DeserializeJson<ReceiptPageInfoDto>(json);
+                var receiptInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(json);
 
                 if (receiptInfo == null)
                     continue;
-                
+
                 receiptPageInfo.Items.AddRange(receiptInfo.Items);
             }
-            
+
             return receiptPageInfo;
         }
 
-        private List<string> ParseHtml(string html)
+        private List<Dictionary<string, string>> ParseHtml(string html)
         {
             var matches = _htmlPattern.Matches(html).Select(x => x.Value).ToList();
-            var cleanMatches = matches.Distinct().ToList();
+            var dictionaries = new List<Dictionary<string, string>>();
+            var dictionary = new Dictionary<string, string>();
 
-            return cleanMatches;
+            var isNewDictionary = true;
+
+            for (int i = 0; i < matches.Count; i++)
+            {
+                var match = matches[i];
+                var parts = match.Split("=", 2);
+                if (parts.Length != 2)
+                    continue;
+
+                var key = parts[0].Trim('"');
+                var value = parts[1].Trim('"');
+
+                // skips all entries that are not relevant receiptItem parsing such as the currency etc.
+                if (!key.Contains("data-art-id", StringComparison.InvariantCultureIgnoreCase) &&
+                    dictionaries.Count == 0)
+                    continue;
+
+                // every data-art-id marks a new object
+                if (key.Contains("data-art-id", StringComparison.InvariantCultureIgnoreCase))
+                    isNewDictionary = true;
+
+                if (isNewDictionary)
+                {
+                    // prevents empty dictionaries in list
+                    if (dictionary.Count != 0)
+                        dictionaries.Add(dictionary);
+                    dictionary = new Dictionary<string, string>();
+                    dictionary.Add(key, value);
+                    isNewDictionary = false;
+                    continue;    
+                }
+                
+                // prevents exceptions because of duplicate keys
+                if (dictionary.ContainsKey(key))
+                    continue;
+
+                dictionary.Add(key, value);
+            }
+            return dictionaries;
+        }
+        
+        private List<ReceiptItemDto> ParseToReceipt(List<Dictionary<string, string>> receiptItemsAsDictionary)
+        {
+            var json = JsonHelper.SerializeJson(receiptItemsAsDictionary);
+
+            return new List<ReceiptItemDto>();
         }
     }
 }
