@@ -1,12 +1,13 @@
 ﻿using System.Globalization;
 using System.Net;
-using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Library.Contracts.Token;
 using MarketStack.Library.Helper.Json;
 
-namespace MarketStack.Library.Receipt
+namespace MarketStack.Library.Receipt.Lidl
 {
     public class LidlReceiptClient : IReceiptClient
     {
@@ -17,8 +18,10 @@ namespace MarketStack.Library.Receipt
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = string.Empty;
-        
+        private static string _authToken = "";
+
+        private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
+
         public LidlReceiptClient()
         {
             var httpClientHandler = new HttpClientHandler()
@@ -64,10 +67,6 @@ namespace MarketStack.Library.Receipt
         {
             try
             {
-                var token = await GetAuthTokenAsync();
-                if (token == null)
-                    return null;
-
                 var culture = CultureInfo.GetCultureInfo(languageCode);
 
                 var apiUrl = $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
@@ -77,7 +76,14 @@ namespace MarketStack.Library.Receipt
                 if (string.IsNullOrEmpty(json))
                     return null;
 
-                var test = JsonExtractor.DeserializeJson<ReceiptDto>(json);
+                using var document = JsonDocument.Parse(json);
+
+                var htmlPrintedReceipt = document.RootElement
+                    .GetProperty("ticket")
+                    .GetProperty("htmlPrintedReceipt")
+                    .GetString()!;
+
+                var test = ParseHtml(htmlPrintedReceipt);
             }
             catch(CultureNotFoundException e)
             {
@@ -96,14 +102,7 @@ namespace MarketStack.Library.Receipt
         public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
         {
             const int firstPage = 1;
-            
-            var token =  await GetAuthTokenAsync();
 
-            if (string.IsNullOrEmpty(token))
-                return null;
-            
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            
             var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
 
             var json = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
@@ -132,6 +131,14 @@ namespace MarketStack.Library.Receipt
             }
             
             return receiptPageInfo;
+        }
+
+        private List<string> ParseHtml(string html)
+        {
+            var matches = _htmlPattern.Matches(html).Select(x => x.Value).ToList();
+            var cleanMatches = matches.Distinct().ToList();
+
+            return cleanMatches;
         }
     }
 }
