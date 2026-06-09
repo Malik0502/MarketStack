@@ -19,8 +19,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken =
-            "";
+        private static string _authToken = "";
 
         private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 
@@ -86,6 +85,20 @@ namespace MarketStack.Library.Receipt.Lidl
 
                 var receiptItemsAsDictionary = ParseHtml(htmlPrintedReceipt);
                 var receiptItems = ParseToReceipt(receiptItemsAsDictionary);
+
+                if (receiptItems == null)
+                    return null;
+
+                return new ReceiptDto()
+                {
+                    TicketId = ticketId,
+                    Currency = "€",
+                    ReceiptItems = receiptItems,
+                    TypeAGrossPrice = 0,
+                    TypeATaxAmount = 0,
+                    TypeBGrossPrice = 0,
+                    TypeBTaxAmount = 0
+                };
             }
             catch (CultureNotFoundException e)
             {
@@ -97,8 +110,6 @@ namespace MarketStack.Library.Receipt.Lidl
                 Console.WriteLine(e);
                 return null;
             }
-
-            return null;
         }
 
         public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
@@ -153,7 +164,7 @@ namespace MarketStack.Library.Receipt.Lidl
                 var key = parts[0].Trim('"');
                 var value = parts[1].Trim('"');
 
-                // skips all entries that are not relevant receiptItem parsing such as the currency etc.
+                // skips all entries that are unrelated receiptItems such as the currency etc.
                 if (!key.Contains("data-art-id", StringComparison.InvariantCultureIgnoreCase) &&
                     dictionaries.Count == 0)
                     continue;
@@ -182,11 +193,18 @@ namespace MarketStack.Library.Receipt.Lidl
             return dictionaries;
         }
         
-        private List<ReceiptItemDto> ParseToReceipt(List<Dictionary<string, string>> receiptItemsAsDictionary)
+        private List<ReceiptItemDto>? ParseToReceipt(List<Dictionary<string, string>> receiptItemsAsDictionary)
         {
             var json = JsonHelper.SerializeJson(receiptItemsAsDictionary);
 
-            return new List<ReceiptItemDto>();
+            var receiptItems = JsonHelper.DeserializeJson<List<ReceiptItemDto>>(json);
+
+            if (receiptItems == null || receiptItems.Count == 0)
+                return null;
+            
+            receiptItems = receiptItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
+            
+            return receiptItems.DistinctBy(x => x.ItemId).ToList();
         }
     }
 }
