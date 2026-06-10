@@ -1,6 +1,6 @@
 ﻿using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
-using MarketStack.Library.Contracts.Receipt.Lidl;
+using MarketStack.Library.Contracts.Receipt.Dto.Lidl;
 using MarketStack.Library.Contracts.Token;
 using MarketStack.Library.Helper.Api;
 using MarketStack.Library.Helper.Json;
@@ -20,7 +20,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = ""
+        private static string _authToken = "";
 
         private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MarketStack.Library.Contracts.Receipt.Lidl;
+namespace MarketStack.Library.Contracts.Receipt.Dto.Lidl;
 
 public class LidlReceiptImportDto
 {
