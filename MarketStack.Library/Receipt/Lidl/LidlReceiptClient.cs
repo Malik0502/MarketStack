@@ -1,12 +1,13 @@
-﻿using System.Globalization;
-using System.Net;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using MarketStack.Library.Contracts.Receipt;
+﻿using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
+using MarketStack.Library.Contracts.Receipt.Lidl;
 using MarketStack.Library.Contracts.Token;
 using MarketStack.Library.Helper.Api;
 using MarketStack.Library.Helper.Json;
+using System.Globalization;
+using System.Net;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace MarketStack.Library.Receipt.Lidl
 {
@@ -19,7 +20,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = "";
+        private static string _authToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjdBQkE4MkIzRTQ4Qjg4MUI5QTg4MDU3N0ZBQUIwMTNENjIwOEYxMDNSUzI1NiIsInR5cCI6IkpXVCIsIng1dCI6ImVycUNzLVNMaUJ1YWlBVjMtcXNCUFdJSThRTSJ9.eyJuYmYiOjE3ODExMTg4NTcsImV4cCI6MTc4MTEyMjQ1NywiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5saWRsLmNvbSIsImF1ZCI6WyJMaWRsLkF1dGhlbnRpY2F0aW9uIiwiaHR0cHM6Ly9hY2NvdW50cy5saWRsLmNvbS9yZXNvdXJjZXMiXSwiY2xpZW50X2lkIjoiR2VybWFueUVjb21tZXJjZUNsaWVudCIsInN1YiI6IjQxODIxOTgwMTE2NzY3MzE1IiwiYXV0aF90aW1lIjoxNzgxMTA3MDYyLCJpZHAiOiJsb2NhbCIsImxlZ2FsX3Rlcm1zIjoiREUiLCJzaWQiOiJCRjdGMzYyQjdDNDdCOUQwNzg4RTdFQTRFQjkwODlBRiIsImlhdCI6MTc4MTExODg1Nywic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsIkxpZGwuQXV0aGVudGljYXRpb24iLCJvZmZsaW5lX2FjY2VzcyJdLCJhbXIiOlsicHdkIiwibWZhIl19.rDJ8EyDAN84Z9xVuH0KStrQLalNNkcxx0SuIjJ--BeavAkilT3lvM_9mZQWDQkzsmwQW-y1ZDYwwJ-fWF7CgufHOJ3-GjyvxyFKRAiua_isfNJT-7XUQDSbeJQtZg6ElYB2c314lvM6-W2fhfJGN7U9xaAj4df9ovEReN9MiGCLQND7AHRHSgx-Bjc7_o4J4KjrCy0-rbcnMvOw28TAX4uTbdGl7E4jEcy2O2LM_LWIuENydKa2-NiJycA6gtsXjwwC5X_vt4U36BAmIm8Si1uN4idz6nphC641kiZYvcuPkY9NXEoLpuWljvWMbY3Avc_gg-02gWdABuERNOomCQQ";
 
         private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 
@@ -197,13 +198,30 @@ namespace MarketStack.Library.Receipt.Lidl
         {
             var json = JsonHelper.SerializeJson(receiptItemsAsDictionary);
 
-            var receiptItems = JsonHelper.DeserializeJson<List<ReceiptItemDto>>(json);
+            var receiptImportItems = JsonHelper.DeserializeJson<List<LidlReceiptImportDto>>(json);
 
-            if (receiptItems == null || receiptItems.Count == 0)
+            if (receiptImportItems == null || receiptImportItems.Count == 0)
                 return null;
             
-            receiptItems = receiptItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
-            
+            receiptImportItems = receiptImportItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
+
+            var receiptItems = new List<ReceiptItemDto>();
+
+            foreach (var import in receiptImportItems)
+            {
+                var receipt = new ReceiptItemDto()
+                {
+                    ItemId = import.ItemId,
+                    ArticleName = import.ArticleName,
+                    ArticlePrice = Math.Round(decimal.Parse(import.ArticlePrice ?? "0", CultureInfo.CurrentCulture), 2),
+                    PromotionId = import.PromotionId,
+                    Quantity = decimal.Parse(string.IsNullOrEmpty(import.Quantity) ? "1" : import.Quantity, CultureInfo.CurrentCulture),
+                    TaxType = import.TaxType
+                };
+
+                receiptItems.Add(receipt);
+            }
+
             return receiptItems.DistinctBy(x => x.ItemId).ToList();
         }
     }
