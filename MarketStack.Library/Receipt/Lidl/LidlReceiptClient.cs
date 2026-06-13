@@ -29,7 +29,11 @@ namespace MarketStack.Library.Receipt.Lidl
             var httpClientHandler = new HttpClientHandler()
             {
                 UseCookies = true,
-                CookieContainer = new CookieContainer()
+                CookieContainer = new CookieContainer(),
+                AutomaticDecompression =
+                    DecompressionMethods.GZip |
+                    DecompressionMethods.Deflate |
+                    DecompressionMethods.Brotli
             };
 
             _httpClient = new HttpClient(httpClientHandler);
