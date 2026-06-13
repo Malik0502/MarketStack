@@ -12,12 +12,12 @@ public class ReceiptItemDto
 
     public decimal Quantity { get; set; }
 
-    public char TaxType { get; set; }
+    public TaxType TaxType { get; set; }
 
     public string? PromotionId { get; set; }
 
     public decimal PreTaxPrice 
-        => Math.Round(ArticlePrice / (1 + TaxToValueConverter.GetTaxValue(TaxType)), 2);
+        => Math.Round(ArticlePrice / (1 + TaxTypeConverter.GetTaxValue(TaxType)), 2);
 
     public decimal TaxAmount 
         => Math.Round(ArticlePrice - PreTaxPrice, 2);

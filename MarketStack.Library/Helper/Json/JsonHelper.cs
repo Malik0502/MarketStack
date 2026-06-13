@@ -9,9 +9,6 @@ public static class JsonHelper
         if (response == null)
             return null;
 
-        var test = response.Content.Headers.ContentType;
-        var testtest = string.Join(",", response.Content.Headers.ContentEncoding);
-
         var json = await response.Content.ReadAsStringAsync();
 
         return json;

@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using MarketStack.Library.Contracts.Miscellaneous;
 
 namespace MarketStack.Library.Receipt.Lidl
 {
@@ -94,14 +95,17 @@ namespace MarketStack.Library.Receipt.Lidl
                 if (receiptItems == null)
                     return null;
 
+                var typeAGrossPrice = CalcTotalPriceForTaxType(receiptItems, TaxType.TypeA);
+                var typeBGrossPrice = CalcTotalPriceForTaxType(receiptItems, TaxType.TypeB);
+
                 return new ReceiptDto()
                 {
                     TicketId = ticketId,
                     Currency = "€",
                     ReceiptItems = receiptItems,
-                    TypeAGrossPrice = 0,
+                    TypeAGrossPrice = typeAGrossPrice,
                     TypeATaxAmount = 0,
-                    TypeBGrossPrice = 0,
+                    TypeBGrossPrice = typeBGrossPrice,
                     TypeBTaxAmount = 0
                 };
             }
@@ -115,6 +119,20 @@ namespace MarketStack.Library.Receipt.Lidl
                 Console.WriteLine(e);
                 return null;
             }
+        }
+
+        private decimal CalcTotalPriceForTaxType(List<ReceiptItemDto> receiptItems, TaxType taxType)
+        {
+            decimal result = 0m;
+
+            foreach (var receiptItem in receiptItems)
+            {
+                if (receiptItem.TaxType != taxType)
+                    continue;
+                result += Math.Round(receiptItem.ArticlePrice * receiptItem.Quantity, 2);
+            }
+
+            return result;
         }
 
         public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
@@ -220,13 +238,19 @@ namespace MarketStack.Library.Receipt.Lidl
                     ArticlePrice = Math.Round(decimal.Parse(import.ArticlePrice ?? "0", CultureInfo.CurrentCulture), 2),
                     PromotionId = import.PromotionId,
                     Quantity = decimal.Parse(string.IsNullOrEmpty(import.Quantity) ? "1" : import.Quantity, CultureInfo.CurrentCulture),
-                    TaxType = import.TaxType
+                    TaxType = TaxTypeConverter.CharToTaxType(import.TaxType), 
                 };
 
                 receiptItems.Add(receipt);
             }
 
-            return receiptItems.DistinctBy(x => x.ItemId).ToList();
+            return receiptItems
+                .GroupBy(x => x.ItemId)
+                .Select(g =>
+                    g.FirstOrDefault(x => x.PromotionId != null)
+                    ?? g.First()
+                )
+                .ToList();
         }
     }
 }
