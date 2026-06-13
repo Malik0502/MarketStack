@@ -123,6 +123,8 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private decimal CalcTotalPriceForTaxType(List<ReceiptItemDto> receiptItems, TaxType taxType)
         {
+
+            // price calculation does not include coupon price reductions, yet
             decimal result = 0m;
 
             foreach (var receiptItem in receiptItems)
@@ -244,6 +246,7 @@ namespace MarketStack.Library.Receipt.Lidl
                 receiptItems.Add(receipt);
             }
 
+            // removes duplicates and prioritizes items with a promotion ID
             return receiptItems
                 .GroupBy(x => x.ItemId)
                 .Select(g =>
