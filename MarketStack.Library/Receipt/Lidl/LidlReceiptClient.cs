@@ -21,7 +21,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = "";
+        private static string _authToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6IjdBQkE4MkIzRTQ4Qjg4MUI5QTg4MDU3N0ZBQUIwMTNENjIwOEYxMDNSUzI1NiIsInR5cCI6IkpXVCIsIng1dCI6ImVycUNzLVNMaUJ1YWlBVjMtcXNCUFdJSThRTSJ9.eyJuYmYiOjE3ODI1NDI0NDIsImV4cCI6MTc4MjU0NjA0MiwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5saWRsLmNvbSIsImF1ZCI6WyJMaWRsLkF1dGhlbnRpY2F0aW9uIiwiaHR0cHM6Ly9hY2NvdW50cy5saWRsLmNvbS9yZXNvdXJjZXMiXSwiY2xpZW50X2lkIjoiR2VybWFueUVjb21tZXJjZUNsaWVudCIsInN1YiI6IjQxODIxOTgwMTE2NzY3MzE1IiwiYXV0aF90aW1lIjoxNzgyNTQyNDQyLCJpZHAiOiJsb2NhbCIsImxlZ2FsX3Rlcm1zIjoiREUiLCJzaWQiOiI4QjQwRTgxQUQ3NzVFNTVFNTBGMEYxNDA5NzdERENFNCIsImlhdCI6MTc4MjU0MjQ0Miwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsIkxpZGwuQXV0aGVudGljYXRpb24iLCJvZmZsaW5lX2FjY2VzcyJdLCJhbXIiOlsicHdkIiwibWZhIl19.PKZGcfkOD1HrLsj7dy0FRnZlAOWC2Rwdj7O0mBOXDvVFHLR9WxUMXX1Zsxk6Xf9ZK1flDHgXKnrrwHpdrbSKKBfM4k768R06WMhwiYeMh_HaTeoNPcSUMgbfRw-IHDy_JX-BayP0v2l0RUQJfrKrYjTc8bpniJeQpqUVnYc6rTT2IwqNJo3PEbSMjjMIVFXdGumTaTyyBtDcN06iy0fuBk5dUVldfzsE4Y2gWBS_nNGyd-LSmU4XgbGYB5KA7UlZIbfJDFaD1DvtAPKQ7BAARcFBZ9sLVjncBr-gcBQLVxQNr7KZ20PRwmSwznwIvsTNWBhKBLMXmuHBF4aj5B6puw";
 
         private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 
@@ -95,14 +95,16 @@ namespace MarketStack.Library.Receipt.Lidl
                 if (receiptItems == null)
                     return null;
 
-                var typeAGrossPrice = CalcTotalPriceForTaxType(receiptItems, TaxType.TypeA);
-                var typeBGrossPrice = CalcTotalPriceForTaxType(receiptItems, TaxType.TypeB);
+                var typeAGrossPrice = CalcPrice(receiptItems, TaxType.TypeA);
+                var typeBGrossPrice = CalcPrice(receiptItems, TaxType.TypeB);
+                var grossPrice = CalcPrice(receiptItems, TaxType.None);
 
                 return new ReceiptDto()
                 {
                     TicketId = ticketId,
                     Currency = "€",
                     ReceiptItems = receiptItems,
+                    GrossPrice = grossPrice,
                     TypeAGrossPrice = typeAGrossPrice,
                     TypeATaxAmount = 0,
                     TypeBGrossPrice = typeBGrossPrice,
@@ -121,12 +123,21 @@ namespace MarketStack.Library.Receipt.Lidl
             }
         }
 
-        private decimal CalcTotalPriceForTaxType(List<ReceiptItemDto> receiptItems, TaxType taxType)
+        private decimal CalcPrice(List<ReceiptItemDto> receiptItems, TaxType taxType)
         {
-
-            // price calculation does not include coupon price reductions, yet
             decimal result = 0m;
 
+            if (taxType == TaxType.None)
+            {
+                foreach (var receiptItem in receiptItems)
+                {
+                    result += receiptItem.ArticlePrice * receiptItem.Quantity;
+                }
+
+                return result;
+            }
+
+            // price calculation does not include coupon price reductions, yet
             foreach (var receiptItem in receiptItems)
             {
                 if (receiptItem.TaxType != taxType)
@@ -248,11 +259,10 @@ namespace MarketStack.Library.Receipt.Lidl
 
             // removes duplicates and prioritizes items with a promotion ID
             return receiptItems
-                .GroupBy(x => x.ItemId)
+                .GroupBy(x => new { x.ItemId, x.Quantity })
                 .Select(g =>
                     g.FirstOrDefault(x => x.PromotionId != null)
-                    ?? g.First()
-                )
+                    ?? g.First())
                 .ToList();
         }
     }
