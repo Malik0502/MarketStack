@@ -21,9 +21,11 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = "";
+        private static string _authToken =
+            "";
 
         private readonly Regex _htmlPattern = new("data-[a-zA-Z0-9_-]+=\"[^\"]*\"");
+        private readonly Regex _htmlVatPattern = new("data-tax-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 
         public LidlReceiptClient()
         {
@@ -67,7 +69,7 @@ namespace MarketStack.Library.Receipt.Lidl
                 return null;
             }
         }
-        
+
         public async Task<ReceiptDto?> GetReceiptAsync(string ticketId, string languageCode)
         {
             try
@@ -89,12 +91,17 @@ namespace MarketStack.Library.Receipt.Lidl
                     .GetProperty("htmlPrintedReceipt")
                     .GetString()!;
 
-                var receiptItemsAsDictionary = ParseHtml(htmlPrintedReceipt);
-                var receiptItems = ParseToReceipt(receiptItemsAsDictionary);
+                var receiptItemInfos = ParseHtmlReceipt(htmlPrintedReceipt);
+                var receiptItems = ParseToReceipt(receiptItemInfos);
 
                 if (receiptItems == null)
                     return null;
 
+                var receiptPriceInfos = ParseHtmlPriceInfo(htmlPrintedReceipt);
+                var receiptPriceInfoItems = ParseToReceiptPrice(receiptPriceInfos); 
+
+                // has to be more flexible since its possible to have more than two tax types
+                // instead of variables maybe list of priceInfoItems in ReceiptDto?
                 var typeAGrossPrice = CalcPrice(receiptItems, TaxType.TypeA);
                 var typeBGrossPrice = CalcPrice(receiptItems, TaxType.TypeB);
                 var grossPrice = CalcPrice(receiptItems, TaxType.None);
@@ -123,6 +130,105 @@ namespace MarketStack.Library.Receipt.Lidl
             }
         }
 
+        private List<ReceiptPriceInfo> ParseToReceiptPrice(List<Dictionary<string, string>>? receiptPriceInfos)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Parses the pricing and vat informations from a lidl receipt html
+        /// </summary>
+        /// <param name="htmlPrintedReceipt"></param>
+        /// <returns>
+        /// A collection of N dictionaries, with N representing the total number of tax types applicable in the specified country.
+        /// Each dictionary includes four key-value pairs describing the attributes of a single tax type.
+        /// </returns>
+        
+        // TODO: Write Unittests
+        private List<Dictionary<string, string>>? ParseHtmlPriceInfo(string htmlPrintedReceipt)
+        {
+            var matches = _htmlVatPattern.Matches(htmlPrintedReceipt).Select(x => x.Value).Distinct().ToList();
+            var dictionaries = new List<Dictionary<string, string>>();
+            var taxTypeAmount = CountTaxTypeAmount(matches);
+
+            if (matches.Count != taxTypeAmount * 4)
+            {
+                return null;
+            }
+
+            for (int taxTypeIndex = 0; taxTypeIndex <= taxTypeAmount; taxTypeIndex++)
+            {
+                var match = SplitMatch(matches[0]);
+                var taxPercentage = SplitMatch(matches[taxTypeAmount]);
+                var taxBaseAmount = SplitMatch(matches[taxTypeAmount + 1]);
+                var taxAmount = SplitMatch(matches[taxTypeAmount + 2]);
+
+                var dictionary = new Dictionary<string, string>()
+                {
+                    [match[0]] = match[1],
+                    [taxPercentage[0]] = taxPercentage[1],
+                    [taxBaseAmount[0]] = taxBaseAmount[1],
+                    [taxAmount[0]] = taxAmount[1],
+                };
+
+                dictionaries.Add(dictionary);
+
+                matches.RemoveAt(taxTypeAmount + 2);
+                matches.RemoveAt(taxTypeAmount +1);
+                matches.RemoveAt(taxTypeAmount);
+                matches.RemoveAt(0);
+                taxTypeAmount--;
+            }
+
+            return dictionaries;
+        }
+
+        private string[] SplitMatch(string match)
+        {
+            var parts = match.Split("=", 2);
+
+            if (parts.Length != 2)
+                return [];
+
+            parts[0] = parts[0].Trim('"');
+            parts[1] = parts[1].Trim('"');
+
+            return parts;
+        }
+
+    /// <summary>
+        /// Calculates the amount of different tax types.
+        /// </summary>
+        /// <param name="matches"></param>
+        /// <returns>The amount of different tax types on the receipt</returns>
+        private static int CountTaxTypeAmount(List<string> matches)
+        {
+            var result = 0;
+
+            foreach (var match in matches)
+            {
+                var parts = match.Split("=", 2);
+
+                if (parts.Length != 2)
+                    return result;
+
+                var value = parts[1].Trim('"');
+
+                if (value.Length == 1 && !int.TryParse(value, out _))
+                {
+                    result++;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Deprecated. Use <see cref="ParseHtmlPriceInfo"/> instead to gain vat and pricing informations
+        /// </summary>
+        /// <param name="receiptItems"></param>
+        /// <param name="taxType"></param>
+        /// <returns></returns>
         private decimal CalcPrice(List<ReceiptItemDto> receiptItems, TaxType taxType)
         {
             decimal result = 0m;
@@ -182,7 +288,7 @@ namespace MarketStack.Library.Receipt.Lidl
             return receiptPageInfo;
         }
 
-        private List<Dictionary<string, string>> ParseHtml(string html)
+        private List<Dictionary<string, string>> ParseHtmlReceipt(string html)
         {
             var matches = _htmlPattern.Matches(html).Select(x => x.Value).ToList();
             var dictionaries = new List<Dictionary<string, string>>();
@@ -217,9 +323,9 @@ namespace MarketStack.Library.Receipt.Lidl
                     dictionary = new Dictionary<string, string>();
                     dictionary.Add(key, value);
                     isNewDictionary = false;
-                    continue;    
+                    continue;
                 }
-                
+
                 // prevents exceptions because of duplicate keys
                 if (dictionary.ContainsKey(key))
                     continue;
@@ -228,7 +334,7 @@ namespace MarketStack.Library.Receipt.Lidl
             }
             return dictionaries;
         }
-        
+
         private List<ReceiptItemDto>? ParseToReceipt(List<Dictionary<string, string>> receiptItemsAsDictionary)
         {
             var json = JsonHelper.SerializeJson(receiptItemsAsDictionary);
@@ -237,7 +343,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
             if (receiptImportItems == null || receiptImportItems.Count == 0)
                 return null;
-            
+
             receiptImportItems = receiptImportItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
 
             var receiptItems = new List<ReceiptItemDto>();
@@ -251,7 +357,7 @@ namespace MarketStack.Library.Receipt.Lidl
                     ArticlePrice = Math.Round(decimal.Parse(import.ArticlePrice ?? "0", CultureInfo.CurrentCulture), 2),
                     PromotionId = import.PromotionId,
                     Quantity = decimal.Parse(string.IsNullOrEmpty(import.Quantity) ? "1" : import.Quantity, CultureInfo.CurrentCulture),
-                    TaxType = TaxTypeConverter.CharToTaxType(import.TaxType), 
+                    TaxType = TaxTypeConverter.CharToTaxType(import.TaxType),
                 };
 
                 receiptItems.Add(receipt);

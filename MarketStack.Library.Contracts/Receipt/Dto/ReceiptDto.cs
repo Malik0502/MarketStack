@@ -10,6 +10,9 @@ public class ReceiptDto
 
     public required decimal TypeBTaxAmount { get; set; }
 
+    /// <summary>
+    /// Price to pay (after VAT)
+    /// </summary>
     public required decimal GrossPrice { get; set; }
 
     public required decimal TypeAGrossPrice { get; set; }
