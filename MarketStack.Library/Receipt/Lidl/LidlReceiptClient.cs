@@ -80,7 +80,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
                 using var document = JsonDocument.Parse(json);
 
-                var htmlPrintedReceipt = document.RootElement
+                string? htmlPrintedReceipt = document.RootElement
                     .GetProperty("ticket")
                     .GetProperty("htmlPrintedReceipt")
                     .GetString()!;
