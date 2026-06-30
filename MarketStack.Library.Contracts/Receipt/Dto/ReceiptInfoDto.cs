@@ -9,5 +9,4 @@ public class ReceiptInfoDto
     public string Store { get; set; }
     public bool IsHtml { get; set; }
     public string Vendor { get; set; } 
-    public ReceiptBadge Badges { get; set; }
 }
