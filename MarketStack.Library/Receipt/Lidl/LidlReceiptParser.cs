@@ -67,7 +67,7 @@ public static class LidlReceiptParser
     /// </summary>
     /// <param name="html"></param>
     /// <returns>A collection of dictionaries containing grocery data like the name, quantity and price etc.</returns>
-    public static List<Dictionary<string, string>>? ParseHtmlReceipt(string? html)
+    private static List<Dictionary<string, string>>? ParseHtmlReceipt(string? html)
     {
         if (string.IsNullOrEmpty(html))
             return null;
@@ -147,7 +147,6 @@ public static class LidlReceiptParser
 
             receiptPriceItems.Add(receiptPriceInfoItem);
         }
-
         return receiptPriceItems;
     }
 
@@ -159,7 +158,7 @@ public static class LidlReceiptParser
     /// A collection of N dictionaries, with N representing the total number of tax types applicable in the specified country.
     /// Each dictionary includes four key-value pairs describing the attributes of a single tax type.
     /// </returns>
-    public static List<Dictionary<string, string>>? ParseHtmlPriceInfo(string? htmlPrintedReceipt)
+    private static List<Dictionary<string, string>>? ParseHtmlPriceInfo(string? htmlPrintedReceipt)
     {
         if (string.IsNullOrEmpty(htmlPrintedReceipt))
             return null;
@@ -178,7 +177,6 @@ public static class LidlReceiptParser
         if (matches.Count != taxTypeAmount * 4)
             return null;
         
-
         for (int taxTypeIndex = 0; taxTypeIndex < taxTypeAmount; taxTypeIndex++)
         {
             var match = SplitMatch(matches[0]);
@@ -202,26 +200,7 @@ public static class LidlReceiptParser
             matches.RemoveAt(0);
             editableTaxTypeAmount--;
         }
-
         return dictionaries;
-    }
-
-    /// <summary>
-    /// Splits the found regex match in two parts
-    /// </summary>
-    /// <param name="match"></param>
-    /// <returns>Returns a string array[2]</returns>
-    private static string[] SplitMatch(string match)
-    {
-        var parts = match.Split("=", 2);
-
-        if (parts.Length != 2)
-            return [];
-
-        parts[0] = parts[0].Trim('"');
-        parts[1] = parts[1].Trim('"');
-
-        return parts;
     }
 
     /// <summary>
@@ -244,9 +223,25 @@ public static class LidlReceiptParser
 
             if (value.Length == 1 && !int.TryParse(value, out _))
                 result++;
-            
         }
-
         return result;
+    }
+    
+    /// <summary>
+    /// Splits the found regex match in two parts
+    /// </summary>
+    /// <param name="match"></param>
+    /// <returns>Returns a string array[2]</returns>
+    private static string[] SplitMatch(string match)
+    {
+        var parts = match.Split("=", 2);
+
+        if (parts.Length != 2)
+            return [];
+
+        parts[0] = parts[0].Trim('"');
+        parts[1] = parts[1].Trim('"');
+
+        return parts;
     }
 }
