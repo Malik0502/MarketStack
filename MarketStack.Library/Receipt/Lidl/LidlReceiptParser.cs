@@ -13,14 +13,64 @@ public static class LidlReceiptParser
     private static readonly Regex HtmlVatPattern = new("data-tax-[a-zA-Z0-9_-]+=\"[^\"]*\"");
 
     /// <summary>
+    /// Parses the given receipt grocery items from an HTML string to specific objects
+    /// </summary>
+    /// <param name="htmlPrintedReceipt"></param>
+    /// <returns>A list with specified objects containing grocery information from a receipt</returns>
+    public static List<ReceiptItemDto>? ParseToReceipt(string? htmlPrintedReceipt)
+    {
+        var receiptItemDictionaries = ParseHtmlReceipt(htmlPrintedReceipt);
+
+        if (receiptItemDictionaries == null || receiptItemDictionaries.Count == 0)
+            return null;
+
+        var json = JsonHelper.SerializeJson(receiptItemDictionaries);
+
+        if (string.IsNullOrEmpty(json))
+            return null;
+
+        var receiptImportItems = JsonHelper.DeserializeJson<List<LidlReceiptImportDto>>(json);
+
+        if (receiptImportItems == null || receiptImportItems.Count == 0)
+            return null;
+
+        receiptImportItems = receiptImportItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
+
+        var receiptItems = new List<ReceiptItemDto>();
+
+        foreach (var import in receiptImportItems)
+        {
+            var receipt = new ReceiptItemDto()
+            {
+                ItemId = import.ItemId,
+                ArticleName = import.ArticleName,
+                ArticlePrice = Math.Round(decimal.Parse(import.ArticlePrice ?? "0", CultureInfo.CurrentCulture), 2),
+                PromotionId = import.PromotionId,
+                Quantity = Math.Round(decimal.Parse(string.IsNullOrEmpty(import.Quantity) ? "1" : import.Quantity, CultureInfo.CurrentCulture), 3),
+                TaxType = TaxTypeConverter.CharToTaxType(import.TaxType),
+            };
+
+            receiptItems.Add(receipt);
+        }
+
+        // removes duplicates and prioritizes items with a promotion ID
+        return receiptItems
+            .GroupBy(x => new { x.ItemId, x.Quantity })
+            .Select(g =>
+                g.FirstOrDefault(x => x.PromotionId != null)
+                ?? g.First())
+            .ToList();
+    }
+
+    /// <summary>
     /// Parses the grocery item information from an HTML to a dictionary list
     /// </summary>
     /// <param name="html"></param>
     /// <returns>A collection of dictionaries containing grocery data like the name, quantity and price etc.</returns>
-    public static List<Dictionary<string, string>> ParseHtmlReceipt(string? html)
+    public static List<Dictionary<string, string>>? ParseHtmlReceipt(string? html)
     {
         if (string.IsNullOrEmpty(html))
-            return [];
+            return null;
         
         var matches = HtmlPattern.Matches(html).Select(x => x.Value).ToList();
         var dictionaries = new List<Dictionary<string, string>>();
@@ -66,51 +116,39 @@ public static class LidlReceiptParser
     }
 
     /// <summary>
-    /// Parses the given receipt grocery items from a dictionary list to specific objects
+    /// Parses the given price information from an HTML string to specific objects
     /// </summary>
-    /// <param name="receiptItemsAsDictionary"></param>
-    /// <returns>A list with specified objects containing grocery information from a receipt</returns>
-    public static List<ReceiptItemDto>? ParseToReceipt(List<Dictionary<string, string>>? receiptItemsAsDictionary)
+    /// <param name="htmlPrintedReceipt"></param>
+    /// <returns>A list with specified objects containing price information from different tax types</returns>
+    public static List<ReceiptPriceInfo>? ParseToReceiptPrice(string? htmlPrintedReceipt)
     {
-        if (receiptItemsAsDictionary == null || receiptItemsAsDictionary.Count == 0)
-            return null;
-        
-        var json = JsonHelper.SerializeJson(receiptItemsAsDictionary);
+        var receiptPriceInfos = ParseHtmlPriceInfo(htmlPrintedReceipt);
 
-        if (string.IsNullOrEmpty(json))
-            return null;
-        
-        var receiptImportItems = JsonHelper.DeserializeJson<List<LidlReceiptImportDto>>(json);
-
-        if (receiptImportItems == null || receiptImportItems.Count == 0)
+        if (receiptPriceInfos == null)
             return null;
 
-        receiptImportItems = receiptImportItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
+        var json = JsonHelper.SerializeJson(receiptPriceInfos);
 
-        var receiptItems = new List<ReceiptItemDto>();
+        var receiptJsonImports = JsonHelper.DeserializeJson<List<LidlReceiptPriceImportDto>>(json);
 
-        foreach (var import in receiptImportItems)
+        if (receiptJsonImports == null || receiptJsonImports.Count == 0)
+            return null;
+
+        var receiptPriceItems = new List<ReceiptPriceInfo>();
+
+        foreach (var importItem in receiptJsonImports)
         {
-            var receipt = new ReceiptItemDto()
+            var receiptPriceInfoItem = new ReceiptPriceInfo()
             {
-                ItemId = import.ItemId,
-                ArticleName = import.ArticleName,
-                ArticlePrice = Math.Round(decimal.Parse(import.ArticlePrice ?? "0", CultureInfo.CurrentCulture), 2),
-                PromotionId = import.PromotionId,
-                Quantity = Math.Round(decimal.Parse(string.IsNullOrEmpty(import.Quantity) ? "1" : import.Quantity, CultureInfo.CurrentCulture), 3),
-                TaxType = TaxTypeConverter.CharToTaxType(import.TaxType),
+                TaxType = TaxTypeConverter.CharToTaxType(importItem.TaxType),
+                TaxBaseAmount = Math.Round(decimal.Parse(importItem.TaxBaseAmount, CultureInfo.CurrentCulture), 2),
+                TaxAmount = Math.Round(decimal.Parse(importItem.TaxAmount, CultureInfo.CurrentCulture), 2)
             };
 
-            receiptItems.Add(receipt);
+            receiptPriceItems.Add(receiptPriceInfoItem);
         }
 
-        // removes duplicates and prioritizes items with a promotion ID
-        return receiptItems
-            .GroupBy(x => new { x.ItemId, x.Quantity })
-            .Select(g =>
-                g.FirstOrDefault(x => x.PromotionId != null)
-                ?? g.First())
-            .ToList();
+        return receiptPriceItems;
     }
 
     /// <summary>
@@ -138,9 +176,8 @@ public static class LidlReceiptParser
         var editableTaxTypeAmount = taxTypeAmount;
         
         if (matches.Count != taxTypeAmount * 4)
-        {
             return null;
-        }
+        
 
         for (int taxTypeIndex = 0; taxTypeIndex < taxTypeAmount; taxTypeIndex++)
         {
@@ -167,40 +204,6 @@ public static class LidlReceiptParser
         }
 
         return dictionaries;
-    }
-
-    /// <summary>
-    /// Parses the given price information from a dictionary list to specific objects
-    /// </summary>
-    /// <param name="receiptPriceInfos"></param>
-    /// <returns>A list with specified objects containing price information from different tax types</returns>
-    public static List<ReceiptPriceInfo>? ParseToReceiptPrice(List<Dictionary<string, string>>? receiptPriceInfos)
-    {
-        if (receiptPriceInfos == null)
-            return null;
-        
-        var json = JsonHelper.SerializeJson(receiptPriceInfos);
-
-        var receiptJsonImports = JsonHelper.DeserializeJson<List<LidlReceiptPriceImportDto>>(json);
-
-        if (receiptJsonImports == null || receiptJsonImports.Count == 0)
-            return null;
-
-        var receiptPriceItems = new List<ReceiptPriceInfo>();
-
-        foreach (var importItem in receiptJsonImports)
-        {
-            var receiptPriceInfoItem = new ReceiptPriceInfo()
-            {
-                TaxType = TaxTypeConverter.CharToTaxType(importItem.TaxType),
-                TaxBaseAmount = Math.Round(decimal.Parse(importItem.TaxBaseAmount, CultureInfo.CurrentCulture), 2),
-                TaxAmount = Math.Round(decimal.Parse(importItem.TaxAmount, CultureInfo.CurrentCulture), 2)
-            };
-
-            receiptPriceItems.Add(receiptPriceInfoItem);
-        }
-
-        return receiptPriceItems;
     }
 
     /// <summary>
@@ -240,9 +243,8 @@ public static class LidlReceiptParser
             var value = parts[1].Trim('"');
 
             if (value.Length == 1 && !int.TryParse(value, out _))
-            {
                 result++;
-            }
+            
         }
 
         return result;

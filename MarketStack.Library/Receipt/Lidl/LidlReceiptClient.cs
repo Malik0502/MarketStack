@@ -80,23 +80,17 @@ namespace MarketStack.Library.Receipt.Lidl
 
                 using var document = JsonDocument.Parse(json);
 
-                string? htmlPrintedReceipt = document.RootElement
+                var htmlPrintedReceipt = document.RootElement
                     .GetProperty("ticket")
                     .GetProperty("htmlPrintedReceipt")
                     .GetString()!;
 
-                var receiptItemDictionaries = LidlReceiptParser.ParseHtmlReceipt(htmlPrintedReceipt);
-                var receiptItems = LidlReceiptParser.ParseToReceipt(receiptItemDictionaries);
+                var receiptItems = LidlReceiptParser.ParseToReceipt(htmlPrintedReceipt);
 
                 if (receiptItems == null)
                     return null;
 
-                var receiptPriceInfoDictionaries= LidlReceiptParser.ParseHtmlPriceInfo(htmlPrintedReceipt);
-
-                if (receiptPriceInfoDictionaries == null)
-                    return null;
-
-                var receiptPriceInfoItems = LidlReceiptParser.ParseToReceiptPrice(receiptPriceInfoDictionaries);
+                var receiptPriceInfoItems = LidlReceiptParser.ParseToReceiptPrice(htmlPrintedReceipt);
 
                 if (receiptPriceInfoItems == null)
                     return null;

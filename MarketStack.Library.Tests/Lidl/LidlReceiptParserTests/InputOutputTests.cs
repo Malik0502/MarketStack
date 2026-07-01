@@ -34,6 +34,7 @@ namespace MarketStack.Library.Tests.Lidl.LidlReceiptParserTests
         {
             var result = LidlReceiptParser.ParseHtmlReceipt(_htmlReceipt);
 
+            Assert.NotNull(result);
             Assert.Equal(9, result.Count);
         }
 
@@ -41,8 +42,8 @@ namespace MarketStack.Library.Tests.Lidl.LidlReceiptParserTests
         public void ParseHtmlReceiptReturnEmptyDictionary_EmptyInput()
         {
             var result = LidlReceiptParser.ParseHtmlReceipt(string.Empty);
-            
-            Assert.Empty(result);
+
+            Assert.Null(result);
         }
 
         [Fact]
@@ -50,15 +51,14 @@ namespace MarketStack.Library.Tests.Lidl.LidlReceiptParserTests
         {
             var result = LidlReceiptParser.ParseHtmlReceipt(null);
             
-            Assert.Empty(result);
+
+            Assert.Null(result);
         }
 
         [Fact]
         public void ParseToReceiptReturnThreeEntries_DictionaryInput()
         {
-            var dictionary = LidlReceiptParser.ParseHtmlReceipt(_htmlReceipt);
-            
-            var result = LidlReceiptParser.ParseToReceipt(dictionary);
+            var result = LidlReceiptParser.ParseToReceipt(_htmlReceipt);
             
             Assert.NotNull(result);
             Assert.NotEmpty(result);
@@ -68,7 +68,7 @@ namespace MarketStack.Library.Tests.Lidl.LidlReceiptParserTests
         [Fact]
         public void ParseToReceiptReturnNull_EmptyInput()
         {
-            var result = LidlReceiptParser.ParseToReceipt([]);
+            var result = LidlReceiptParser.ParseToReceipt(string.Empty);
             
             Assert.Null(result);
         }
@@ -122,9 +122,7 @@ namespace MarketStack.Library.Tests.Lidl.LidlReceiptParserTests
         [Fact]
         public void ParseToReceiptPriceReturnThreeEntries_DictionaryInput()
         {
-            var dictionary = LidlReceiptParser.ParseHtmlPriceInfo(_htmlPriceInfoTwoTaxTypes);
-            
-            var result = LidlReceiptParser.ParseToReceiptPrice(dictionary);
+            var result = LidlReceiptParser.ParseToReceiptPrice(_htmlPriceInfoTwoTaxTypes);
             
             Assert.NotNull(result);
             Assert.NotEmpty(result);
@@ -134,7 +132,7 @@ namespace MarketStack.Library.Tests.Lidl.LidlReceiptParserTests
         [Fact]
         public void ParseToReceiptPriceReturnNull_EmptyInput()
         {
-            var result = LidlReceiptParser.ParseToReceiptPrice([]);
+            var result = LidlReceiptParser.ParseToReceiptPrice(string.Empty);
             
             Assert.Null(result);
         }
