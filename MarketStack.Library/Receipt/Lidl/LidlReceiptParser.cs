@@ -24,40 +24,23 @@ public static class LidlReceiptParser
         if (receiptItemDictionaries == null || receiptItemDictionaries.Count == 0)
             return null;
 
-        var json = JsonHelper.SerializeJson(receiptItemDictionaries);
-
-        if (string.IsNullOrEmpty(json))
-            return null;
-
-        var receiptImportItems = JsonHelper.DeserializeJson<List<LidlReceiptImportDto>>(json);
-
-        if (receiptImportItems == null || receiptImportItems.Count == 0)
-            return null;
-
-        receiptImportItems = receiptImportItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
-
-        var receiptItems = new List<ReceiptItemDto>();
-
-        foreach (var import in receiptImportItems)
+        var receiptItems = receiptItemDictionaries.Select(x => new ReceiptItemDto()
         {
-            var receipt = new ReceiptItemDto()
-            {
-                ItemId = import.ItemId,
-                ArticleName = import.ArticleName,
-                ArticlePrice = Math.Round(decimal.Parse(import.ArticlePrice ?? "0", CultureInfo.CurrentCulture), 2),
-                PromotionId = import.PromotionId,
-                Quantity = Math.Round(decimal.Parse(string.IsNullOrEmpty(import.Quantity) ? "1" : import.Quantity, CultureInfo.CurrentCulture), 3),
-                TaxType = TaxTypeConverter.CharToTaxType(import.TaxType),
-            };
+            ItemId = x.GetValueOrDefault("data-art-id", string.Empty),
+            ArticleName = x.GetValueOrDefault("data-art-description", null),
+            ArticlePrice = Math.Round(decimal.Parse(x!.GetValueOrDefault("data-unit-price", null) ?? "0", CultureInfo.CurrentCulture), 2),
+            PromotionId = x!.GetValueOrDefault("data-promotion-id", null),
+            Quantity = Math.Round(decimal.Parse(string.IsNullOrEmpty(x.GetValueOrDefault("data-art-quantity", string.Empty)) ? "1" : x.GetValueOrDefault("data-art-quantity")!, CultureInfo.CurrentCulture), 3),
+            TaxType = TaxTypeConverter.CharToTaxType(x.GetValueOrDefault("data-tax-type", string.Empty).FirstOrDefault())
+        }).ToList();
 
-            receiptItems.Add(receipt);
-        }
+        receiptItems = receiptItems.Where(x => !string.IsNullOrEmpty(x.ItemId) && !string.IsNullOrEmpty(x.ArticleName)).ToList();
 
         // removes duplicates and prioritizes items with a promotion ID
         return receiptItems
             .GroupBy(x => new { x.ItemId, x.Quantity })
             .Select(g =>
-                g.FirstOrDefault(x => x.PromotionId != null)
+                g.FirstOrDefault(x => !string.IsNullOrEmpty(x.PromotionId))
                 ?? g.First())
             .ToList();
     }
