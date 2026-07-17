@@ -2,7 +2,7 @@
 
 namespace MarketStack.Library.Helper.Json;
 
-public static class JsonExtractor
+public static class JsonHelper
 {
     public static async Task<string?> ExtractResponseAsJsonAsync(HttpResponseMessage? response)
     {
@@ -25,5 +25,10 @@ public static class JsonExtractor
         var result = JsonSerializer.Deserialize<T>(json, serializeOptions);
 
         return result;
+    }
+
+    public static string SerializeJson<T>(T obj) where T : class
+    {
+        return JsonSerializer.Serialize(obj);
     }
 }

@@ -1,5 +1,5 @@
 using MarketStack.Library.Contracts.Receipt.Dto;
-using MarketStack.Library.Receipt;
+using MarketStack.Library.Receipt.Lidl;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MarketStack.Api.Controller
@@ -26,7 +26,7 @@ namespace MarketStack.Api.Controller
         [HttpGet("{languageCode}/{ticketId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        public async Task<ActionResult<ReceiptPageInfoDto>> GetReceipt(string languageCode, string ticketId)
+        public async Task<ActionResult<ReceiptPageInfoDto>> GetReceipt(string ticketId, string languageCode = "de-DE")
         {
             LidlReceiptClient client = new LidlReceiptClient();
             var result = await client.GetReceiptAsync(ticketId, languageCode);

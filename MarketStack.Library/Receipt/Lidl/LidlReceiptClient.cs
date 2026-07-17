@@ -1,12 +1,13 @@
-﻿using System.Globalization;
-using System.Net;
-using System.Net.Http.Headers;
-using MarketStack.Library.Contracts.Receipt;
+﻿using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Library.Contracts.Token;
+using MarketStack.Library.Helper.Api;
 using MarketStack.Library.Helper.Json;
+using System.Globalization;
+using System.Net;
+using System.Text.Json;
 
-namespace MarketStack.Library.Receipt
+namespace MarketStack.Library.Receipt.Lidl
 {
     public class LidlReceiptClient : IReceiptClient
     {
@@ -17,14 +18,19 @@ namespace MarketStack.Library.Receipt
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken = string.Empty;
-        
+        private static string _authToken =
+            "";
+
         public LidlReceiptClient()
         {
             var httpClientHandler = new HttpClientHandler()
             {
                 UseCookies = true,
-                CookieContainer = new CookieContainer()
+                CookieContainer = new CookieContainer(),
+                AutomaticDecompression =
+                    DecompressionMethods.GZip |
+                    DecompressionMethods.Deflate |
+                    DecompressionMethods.Brotli
             };
 
             _httpClient = new HttpClient(httpClientHandler);
@@ -32,7 +38,7 @@ namespace MarketStack.Library.Receipt
             httpClientHandler.CookieContainer.Add(new Uri(BaseApiUrl),
                 new Cookie("authToken", _authToken));
         }
-        
+
         public async Task<string?> GetAuthTokenAsync()
         {
             try
@@ -42,13 +48,13 @@ namespace MarketStack.Library.Receipt
                 if (string.IsNullOrEmpty(json))
                     return null;
 
-                var token = JsonExtractor.DeserializeJson<LidlApiAuth>(json);
+                var token = JsonHelper.DeserializeJson<LidlApiAuth>(json);
 
-                if (token == null || string.IsNullOrEmpty(token.Token)) 
+                if (token == null || string.IsNullOrEmpty(token.Token))
                     return null;
-            
+
                 _authToken = token.Token;
-            
+
                 return _authToken;
             }
             catch (Exception e)
@@ -58,28 +64,47 @@ namespace MarketStack.Library.Receipt
             }
         }
 
-
-        // TODO: Build HTML Parser
         public async Task<ReceiptDto?> GetReceiptAsync(string ticketId, string languageCode)
         {
             try
             {
-                var token = await GetAuthTokenAsync();
-                if (token == null)
-                    return null;
-
                 var culture = CultureInfo.GetCultureInfo(languageCode);
 
-                var apiUrl = $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
+                var apiUrl =
+                    $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
 
                 var json = await ApiHelper.FetchJsonAsync(apiUrl, _httpClient);
 
                 if (string.IsNullOrEmpty(json))
                     return null;
 
-                var test = JsonExtractor.DeserializeJson<ReceiptDto>(json);
+                using var document = JsonDocument.Parse(json);
+
+                var htmlPrintedReceipt = document.RootElement
+                    .GetProperty("ticket")
+                    .GetProperty("htmlPrintedReceipt")
+                    .GetString()!;
+
+                var receiptItems = LidlReceiptParser.ParseToReceipt(htmlPrintedReceipt);
+
+                if (receiptItems == null)
+                    return null;
+
+                var receiptPriceInfoItems = LidlReceiptParser.ParseToReceiptPrice(htmlPrintedReceipt);
+
+                if (receiptPriceInfoItems == null)
+                    return null;
+
+                return new ReceiptDto()
+                {
+                    TicketId = ticketId,
+                    Currency = "€",
+                    ReceiptItems = receiptItems,
+                    ReceiptPriceInfos = receiptPriceInfoItems,
+                    GrossPrice = receiptPriceInfoItems.Sum(x => x.TaxBaseAmount),
+                };
             }
-            catch(CultureNotFoundException e)
+            catch (CultureNotFoundException e)
             {
                 Console.WriteLine($"Could not found a culture from the given language code: {e}");
                 return null;
@@ -89,21 +114,12 @@ namespace MarketStack.Library.Receipt
                 Console.WriteLine(e);
                 return null;
             }
-
-            return null;
         }
 
         public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
         {
             const int firstPage = 1;
-            
-            var token =  await GetAuthTokenAsync();
 
-            if (string.IsNullOrEmpty(token))
-                return null;
-            
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            
             var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
 
             var json = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
@@ -111,11 +127,11 @@ namespace MarketStack.Library.Receipt
             if (string.IsNullOrEmpty(json))
                 return null;
 
-            var receiptPageInfo = JsonExtractor.DeserializeJson<ReceiptPageInfoDto>(json);
+            var receiptPageInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(json);
 
             if (receiptPageInfo == null)
                 return null;
-            
+
             for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
             {
                 json = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
@@ -123,14 +139,14 @@ namespace MarketStack.Library.Receipt
                 if (string.IsNullOrEmpty(json))
                     continue;
 
-                var receiptInfo = JsonExtractor.DeserializeJson<ReceiptPageInfoDto>(json);
+                var receiptInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(json);
 
                 if (receiptInfo == null)
                     continue;
-                
+
                 receiptPageInfo.Items.AddRange(receiptInfo.Items);
             }
-            
+
             return receiptPageInfo;
         }
     }
