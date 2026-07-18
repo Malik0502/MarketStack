@@ -17,6 +17,11 @@ public class MarketStackContext : DbContext
 
     public DbSet<StoreLocation> StoreLocation { get; set; }
 
+    public MarketStackContext(DbContextOptions<MarketStackContext> options)
+        : base(options)
+    {
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Receipt>(r =>

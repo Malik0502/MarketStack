@@ -1,4 +1,5 @@
 using MarketStack.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace MarketStack.Api
 {
@@ -35,7 +36,9 @@ namespace MarketStack.Api
 
         private static void CreateBuilder(WebApplicationBuilder builder)
         {
-            builder.Services.AddDbContext<MarketStackContext>();
+            builder.Services.AddDbContext<MarketStackContext>(options =>
+                options.UseNpgsql(
+                    builder.Configuration.GetConnectionString("DefaultConnection")));
         }
     }
 }

@@ -15,7 +15,9 @@
   </Folder>
   <Folder Name="/Library/">
     <Project Path="MarketStack.Library.Contracts/MarketStack.Library.Contracts.csproj" Id="212dd4b5-b355-4ab7-9b8e-9ed7e3634ab9" />
-    <Project Path="MarketStack.Library.Tests/MarketStack.Library.Tests.csproj" Id="7b84f922-cfdc-4529-bc3b-8563d6e52c1c" />
+    <Project Path="MarketStack.Library.Tests/MarketStack.Library.Tests.csproj" Id="7b84f922-cfdc-4529-bc3b-8563d6e52c1c">
+      <Build Solution="Debug|*" Project="false" />
+    </Project>
     <Project Path="MarketStack.Library/MarketStack.Library.csproj" Id="bea1354e-8446-4836-ae40-a636753767f0" />
   </Folder>
 </Solution>
