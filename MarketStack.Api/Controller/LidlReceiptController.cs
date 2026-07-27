@@ -1,20 +1,26 @@
 using MarketStack.Library.Contracts.Receipt.Dto;
-using MarketStack.Library.Receipt.Lidl;
+using MarketStack.Logic.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MarketStack.Api.Controller
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ReceiptController : ControllerBase
+    public class LidlReceiptController : ControllerBase
     {
+        private readonly IReceiptInformationManager _receiptInformationManager;
+
+        public LidlReceiptController(IReceiptInformationManager receiptInformationManager)
+        {
+            _receiptInformationManager = receiptInformationManager;
+        }
+
         [HttpGet("ReceiptInfo")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<ActionResult<ReceiptPageInfoDto>> Get()
         {
-            LidlReceiptClient client = new LidlReceiptClient();
-            var result = await client.GetReceiptsInfoAsync();
+            var result = await _receiptInformationManager.GetReceiptsInfoAsync();
 
             if (result == null)
                 return NoContent();
@@ -28,8 +34,7 @@ namespace MarketStack.Api.Controller
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<ActionResult<ReceiptPageInfoDto>> GetReceipt(string ticketId, string languageCode = "de-DE")
         {
-            LidlReceiptClient client = new LidlReceiptClient();
-            var result = await client.GetReceiptAsync(ticketId, languageCode);
+            var result = await _receiptInformationManager.GetReceiptAsync(ticketId, languageCode);
 
             if (result == null)
                 return NoContent();
@@ -42,8 +47,7 @@ namespace MarketStack.Api.Controller
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         public async Task<ActionResult<string>> GetToken()
         {
-            LidlReceiptClient client = new LidlReceiptClient();
-            var result = await client.GetAuthTokenAsync();
+            var result = await _receiptInformationManager.GetAuthTokenAsync();
             
             if (result == null)
                 return NoContent();

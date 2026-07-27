@@ -22,20 +22,24 @@ public class ReceiptItem
     [Required]
     public decimal Quantity { get; set; }
 
-    [Column("net_price")]
+    [Column("price")]
     [Required]
-    public decimal NetPrice { get; set; }
-
-    [Column("gross_price")]
-    [Required]
-    public decimal GrossPrice { get; set; }
+    public decimal Price { get; set; }
 
     [Column("vat_rate")]
     [Required]
-    public decimal VatRate { get; set; }
+    public int TaxType { get; set; }
 
-    public Receipt Receipt { get; set; }
+    [Column("store_intern_item_id")]
+    [StringLength(255)]
+    public string? StoreInternItemId { get; set; } = null;
 
-    public Product Product { get; set; }
+    [Column("promotion_id")]
+    [StringLength(255)]
+    public string? PromotionId { get; set; } = null;
+
+    public Receipt? Receipt { get; set; }
+
+    public Product? Product { get; set; }
 
 }

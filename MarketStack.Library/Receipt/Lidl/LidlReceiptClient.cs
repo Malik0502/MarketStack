@@ -85,6 +85,13 @@ namespace MarketStack.Library.Receipt.Lidl
                     .GetProperty("htmlPrintedReceipt")
                     .GetString()!;
 
+                var date = document.RootElement
+                    .GetProperty("ticket")
+                    .GetProperty("date")
+                    .GetString();
+
+                var store = await GetReceiptsStoreLocationAsync(ticketId);
+
                 var receiptItems = LidlReceiptParser.ParseToReceipt(htmlPrintedReceipt);
 
                 if (receiptItems == null)
@@ -95,10 +102,13 @@ namespace MarketStack.Library.Receipt.Lidl
                 if (receiptPriceInfoItems == null)
                     return null;
 
+
                 return new ReceiptDto()
                 {
                     TicketId = ticketId,
                     Currency = "€",
+                    Date = date ?? string.Empty,
+                    Store = store ?? string.Empty,
                     ReceiptItems = receiptItems,
                     ReceiptPriceInfos = receiptPriceInfoItems,
                     GrossPrice = receiptPriceInfoItems.Sum(x => x.TaxBaseAmount),
@@ -134,7 +144,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
             for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
             {
-                json = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
+                json = await ApiHelper.FetchJsonAsync(apiUrl + page, _httpClient);
 
                 if (string.IsNullOrEmpty(json))
                     continue;
@@ -148,6 +158,24 @@ namespace MarketStack.Library.Receipt.Lidl
             }
 
             return receiptPageInfo;
+        }
+
+        private async Task<string?> GetReceiptsStoreLocationAsync(string ticketId)
+        {
+            var receiptPageInfos = await GetReceiptsInfoAsync();
+
+            if (receiptPageInfos == null)
+                return null;
+
+            foreach (var receiptInfo in receiptPageInfos.Items)
+            {
+                if (receiptInfo.Id != ticketId)
+                    continue;
+
+                return receiptInfo.Store;
+            }
+
+            return null;
         }
     }
 }

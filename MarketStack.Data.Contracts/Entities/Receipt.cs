@@ -10,15 +10,19 @@ public class Receipt
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("store_location_id")]
+    [Column("ticket_id")]
+    [StringLength(255)]
     [Required]
-    public int StoreLocationId { get; set; }
+    public required string ReceiptTicketId { get; set; }
+
+    [Column("store")]
+    [Required]
+    [StringLength(255)]
+    public required string Store { get; set; }
 
     [Column("purchasedAt")]
     [Required]
     public DateTime PurchasedAt { get; set; }
-
-    public StoreLocation StoreLocation { get; set; }
 
     public List<ReceiptItem> Items { get; set; }
 }
