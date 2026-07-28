@@ -1,3 +1,4 @@
+using MarketStack.Common.ApiBase;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Logic.Contracts;
 using Microsoft.AspNetCore.Mvc;
@@ -17,41 +18,60 @@ namespace MarketStack.Api.Controller
 
         [HttpGet("ReceiptInfo")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ReceiptPageInfoDto>> Get()
         {
             var result = await _receiptInformationManager.GetReceiptsInfoAsync();
 
-            if (result == null)
-                return NoContent();
-            
+            if (result.ErrorCode != ErrorCodes.None)
+            {
+                var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+
+                return StatusCode((int)httpStatus, result);
+            }
+
             return Ok(result);
         }
 
         // GET: api/<ReceiptController>
         [HttpGet("{languageCode}/{ticketId}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ReceiptPageInfoDto>> GetReceipt(string ticketId, string languageCode = "de-DE")
         {
             var result = await _receiptInformationManager.GetReceiptAsync(ticketId, languageCode);
 
-            if (result == null)
-                return NoContent();
+            if (result.ErrorCode != ErrorCodes.None)
+            {
+                var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+
+                return StatusCode((int)httpStatus, result);
+            }
 
             return Ok(result);
         }
 
         [HttpGet("Token")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<string>> GetToken()
         {
             var result = await _receiptInformationManager.GetAuthTokenAsync();
-            
-            if (result == null)
-                return NoContent();
-            
+
+            if (result.ErrorCode != ErrorCodes.None)
+            {
+                var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+
+                return StatusCode((int)httpStatus, result);
+            }
+
             return Ok(result);
         }
 

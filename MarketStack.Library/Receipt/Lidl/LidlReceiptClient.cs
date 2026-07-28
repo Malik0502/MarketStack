@@ -6,6 +6,7 @@ using MarketStack.Library.Helper.Json;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
+using MarketStack.Common.ApiBase;
 
 namespace MarketStack.Library.Receipt.Lidl
 {
@@ -21,6 +22,7 @@ namespace MarketStack.Library.Receipt.Lidl
         private static string _authToken =
             "";
 
+        // TODO: write unittest to check for all possible errorcodes and if dataresponse works like intended
         public LidlReceiptClient()
         {
             var httpClientHandler = new HttpClientHandler()
@@ -39,32 +41,40 @@ namespace MarketStack.Library.Receipt.Lidl
                 new Cookie("authToken", _authToken));
         }
 
-        public async Task<string?> GetAuthTokenAsync()
+        public async Task<DataResponse<string>> GetAuthTokenAsync()
         {
             try
             {
-                var json = await ApiHelper.FetchJsonAsync(AuthTokenApiUrl, _httpClient);
+                var fetchedData = await ApiHelper.FetchJsonAsync(AuthTokenApiUrl, _httpClient);
 
-                if (string.IsNullOrEmpty(json))
-                    return null;
+                if (string.IsNullOrEmpty(fetchedData.Json))
+                    return DataResponse<string>.CreateErrorResponse(
+                            "Failed to retrieve authentication token.", 
+                            "There was an error while fetching the authentication token.",
+                            fetchedData.HttpResponseMessage.StatusCode.MapHttpStatusCodeToErrorCode());
 
-                var token = JsonHelper.DeserializeJson<LidlApiAuth>(json);
+                var token = JsonHelper.DeserializeJson<LidlApiAuth>(fetchedData.Json);
 
                 if (token == null || string.IsNullOrEmpty(token.Token))
-                    return null;
+                    return DataResponse<string>.CreateErrorResponse(
+                        "Failed to retrieve authentication token.",
+                        "There was an error while deserializing the authentication token.",
+                        ErrorCodes.ParseError);
 
                 _authToken = token.Token;
 
-                return _authToken;
+                return DataResponse<string>.CreateSuccessResponse(
+                    _authToken, 
+                    "Success", 
+                    "Authentication token retrieved successfully.");
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                return null;
+                return DataResponse<string>.CreateErrorResponse("Exception occurred", e.Message, ErrorCodes.InternalError);
             }
         }
 
-        public async Task<ReceiptDto?> GetReceiptAsync(string ticketId, string languageCode)
+        public async Task<DataResponse<ReceiptDto>> GetReceiptAsync(string ticketId, string languageCode)
         {
             try
             {
@@ -73,12 +83,15 @@ namespace MarketStack.Library.Receipt.Lidl
                 var apiUrl =
                     $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
 
-                var json = await ApiHelper.FetchJsonAsync(apiUrl, _httpClient);
+                var fetchedData = await ApiHelper.FetchJsonAsync(apiUrl, _httpClient);
 
-                if (string.IsNullOrEmpty(json))
-                    return null;
+                if (string.IsNullOrEmpty(fetchedData.Json))
+                    return DataResponse<ReceiptDto>.CreateErrorResponse(
+                        "Failed to retrieve ticket.",
+                        "There was an error while fetching the ticket information.",
+                        fetchedData.HttpResponseMessage.StatusCode.MapHttpStatusCodeToErrorCode());
 
-                using var document = JsonDocument.Parse(json);
+                using var document = JsonDocument.Parse(fetchedData.Json);
 
                 var htmlPrintedReceipt = document.RootElement
                     .GetProperty("ticket")
@@ -95,15 +108,20 @@ namespace MarketStack.Library.Receipt.Lidl
                 var receiptItems = LidlReceiptParser.ParseToReceipt(htmlPrintedReceipt);
 
                 if (receiptItems == null)
-                    return null;
+                    return DataResponse<ReceiptDto>.CreateErrorResponse(
+                        "Failed to retrieve ticket.",
+                        "There was an error while parsing the ticket information.",
+                        ErrorCodes.ParseError);
 
                 var receiptPriceInfoItems = LidlReceiptParser.ParseToReceiptPrice(htmlPrintedReceipt);
 
                 if (receiptPriceInfoItems == null)
-                    return null;
+                    return DataResponse<ReceiptDto>.CreateErrorResponse(
+                        "Failed to retrieve ticket.",
+                        "There was an error while parsing the price information of a ticket.",
+                        ErrorCodes.ParseError);
 
-
-                return new ReceiptDto()
+                var result = new ReceiptDto()
                 {
                     TicketId = ticketId,
                     Currency = "€",
@@ -113,61 +131,87 @@ namespace MarketStack.Library.Receipt.Lidl
                     ReceiptPriceInfos = receiptPriceInfoItems,
                     GrossPrice = receiptPriceInfoItems.Sum(x => x.TaxBaseAmount),
                 };
+
+                return DataResponse<ReceiptDto>.CreateSuccessResponse(
+                    result, 
+                    "Success", 
+                    "Receipt data retrieved successfully.");
             }
             catch (CultureNotFoundException e)
             {
-                Console.WriteLine($"Could not found a culture from the given language code: {e}");
-                return null;
+                return DataResponse<ReceiptDto>.CreateErrorResponse(
+                    "Invalid language code.",
+                    e.Message, ErrorCodes.Validation);
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                return null;
+                return DataResponse<ReceiptDto>.CreateErrorResponse(
+                    "Exception occurred",
+                    e.Message, ErrorCodes.InternalError);
             }
         }
 
-        public async Task<ReceiptPageInfoDto?> GetReceiptsInfoAsync()
+        public async Task<DataResponse<ReceiptPageInfoDto>> GetReceiptsInfoAsync()
         {
-            const int firstPage = 1;
-
-            var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
-
-            var json = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
-
-            if (string.IsNullOrEmpty(json))
-                return null;
-
-            var receiptPageInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(json);
-
-            if (receiptPageInfo == null)
-                return null;
-
-            for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
+            try
             {
-                json = await ApiHelper.FetchJsonAsync(apiUrl + page, _httpClient);
+                const int firstPage = 1;
 
-                if (string.IsNullOrEmpty(json))
-                    continue;
+                var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
 
-                var receiptInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(json);
+                var fetchedData = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
 
-                if (receiptInfo == null)
-                    continue;
+                if (string.IsNullOrEmpty(fetchedData.Json))
+                    return DataResponse<ReceiptPageInfoDto>.CreateErrorResponse(
+                        "Failed to retrieve receipt information.",
+                        "There was an error while fetching the receipt information.",
+                        fetchedData.HttpResponseMessage.StatusCode.MapHttpStatusCodeToErrorCode());
 
-                receiptPageInfo.Items.AddRange(receiptInfo.Items);
+                var receiptPageInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(fetchedData.Json);
+
+                if (receiptPageInfo == null)
+                    return DataResponse<ReceiptPageInfoDto>.CreateErrorResponse(
+                        "Failed to retrieve receipt information.",
+                        "There was an error while deserializing the receipt information.",
+                        ErrorCodes.ParseError);
+
+                for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
+                {
+                    fetchedData = await ApiHelper.FetchJsonAsync(apiUrl + page, _httpClient);
+
+                    if (string.IsNullOrEmpty(fetchedData.Json))
+                        continue;
+
+                    var receiptInfo = JsonHelper.DeserializeJson<ReceiptPageInfoDto>(fetchedData.Json);
+
+                    if (receiptInfo == null)
+                        continue;
+
+                    receiptPageInfo.Items.AddRange(receiptInfo.Items);
+                }
+
+                return DataResponse<ReceiptPageInfoDto>.CreateSuccessResponse(
+                    receiptPageInfo,
+                    "Success",
+                    "Receipt information retrieved successfully."
+                );
             }
-
-            return receiptPageInfo;
+            catch (Exception e)
+            {
+                return DataResponse<ReceiptPageInfoDto>.CreateErrorResponse(
+                    "Exception occurred",
+                    e.Message, ErrorCodes.InternalError);
+            }
         }
 
         private async Task<string?> GetReceiptsStoreLocationAsync(string ticketId)
         {
             var receiptPageInfos = await GetReceiptsInfoAsync();
 
-            if (receiptPageInfos == null)
+            if (receiptPageInfos.Data == null)
                 return null;
 
-            foreach (var receiptInfo in receiptPageInfos.Items)
+            foreach (var receiptInfo in receiptPageInfos.Data.Items)
             {
                 if (receiptInfo.Id != ticketId)
                     continue;
