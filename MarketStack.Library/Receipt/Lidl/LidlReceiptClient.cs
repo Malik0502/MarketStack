@@ -1,17 +1,18 @@
 ﻿using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Library.Contracts.Token;
-using MarketStack.Library.Helper.Api;
 using MarketStack.Library.Helper.Json;
 using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using MarketStack.Common.ApiBase;
+using MarketStack.Library.Contracts.Helper;
 
 namespace MarketStack.Library.Receipt.Lidl
 {
     public class LidlReceiptClient : IReceiptClient
     {
+        private readonly IFetchClient _fetchClient;
         private const string BaseApiUrl = "https://www.lidl.de";
         private const string AuthTokenApiUrl = $"{BaseApiUrl}/mla/api/v1/token";
         private const string AllReceiptApiUrl = $"{BaseApiUrl}/mre/api/v1/tickets?country";
@@ -22,9 +23,10 @@ namespace MarketStack.Library.Receipt.Lidl
         private static string _authToken =
             "";
 
-        // TODO: write unittest to check for all possible errorcodes and if dataresponse works like intended
-        public LidlReceiptClient()
+        // TODO: write unittest to check for all possible error codes and if data response works like intended
+        public LidlReceiptClient(IFetchClient fetchClient)
         {
+            _fetchClient = fetchClient;
             var httpClientHandler = new HttpClientHandler()
             {
                 UseCookies = true,
@@ -45,7 +47,7 @@ namespace MarketStack.Library.Receipt.Lidl
         {
             try
             {
-                var fetchedData = await ApiHelper.FetchJsonAsync(AuthTokenApiUrl, _httpClient);
+                var fetchedData = await _fetchClient.FetchJsonAsync(AuthTokenApiUrl, _httpClient);
 
                 if (string.IsNullOrEmpty(fetchedData.Json))
                     return DataResponse<string>.CreateErrorResponse(
@@ -83,7 +85,7 @@ namespace MarketStack.Library.Receipt.Lidl
                 var apiUrl =
                     $"{ReceiptBaseUrl}/{ticketId}?country={culture.TwoLetterISOLanguageName}&languageCode={languageCode}";
 
-                var fetchedData = await ApiHelper.FetchJsonAsync(apiUrl, _httpClient);
+                var fetchedData = await _fetchClient.FetchJsonAsync(apiUrl, _httpClient);
 
                 if (string.IsNullOrEmpty(fetchedData.Json))
                     return DataResponse<ReceiptDto>.CreateErrorResponse(
@@ -159,7 +161,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
                 var apiUrl = $"{AllReceiptApiUrl}=DE&page=";
 
-                var fetchedData = await ApiHelper.FetchJsonAsync(apiUrl + firstPage, _httpClient);
+                var fetchedData = await _fetchClient.FetchJsonAsync(apiUrl + firstPage, _httpClient);
 
                 if (string.IsNullOrEmpty(fetchedData.Json))
                     return DataResponse<ReceiptPageInfoDto>.CreateErrorResponse(
@@ -177,7 +179,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
                 for (int page = 2; page <= receiptPageInfo.TotalCount / receiptPageInfo.Size + 1; page++)
                 {
-                    fetchedData = await ApiHelper.FetchJsonAsync(apiUrl + page, _httpClient);
+                    fetchedData = await _fetchClient.FetchJsonAsync(apiUrl + page, _httpClient);
 
                     if (string.IsNullOrEmpty(fetchedData.Json))
                         continue;
