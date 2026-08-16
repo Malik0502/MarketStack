@@ -1,6 +1,8 @@
 using MarketStack.Common.ApiBase;
+using MarketStack.Data.Contracts.Repositories;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Logic.Contracts;
+using MarketStack.Logic.Mapping;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MarketStack.Api.Controller
@@ -10,12 +12,39 @@ namespace MarketStack.Api.Controller
     public class LidlReceiptController : ControllerBase
     {
         private readonly IReceiptInformationManager _receiptInformationManager;
+        private readonly IReceiptRepository _repository;
 
-        public LidlReceiptController(IReceiptInformationManager receiptInformationManager)
+        public LidlReceiptController(IReceiptInformationManager receiptInformationManager, IReceiptRepository repository)
         {
             _receiptInformationManager = receiptInformationManager;
+            _repository = repository;
         }
 
+        // Date Time Error while saving to db
+        [HttpPost("ToDb")]
+        public async Task<ActionResult> FillDb(string languageCode = "de-DE")
+        {
+            var receipts = await _receiptInformationManager.GetReceiptsInfoAsync();
+
+            if (receipts.ErrorCode != ErrorCodes.None)
+            {
+                var httpStatus = receipts.ErrorCode.MapErrorCodeToHttpStatusCode();
+
+                return StatusCode((int)httpStatus, receipts);
+            }
+            
+            foreach (var receipt in receipts.Data!.Items)
+            {
+                var result = await _receiptInformationManager.GetReceiptAsync(receipt.Id, languageCode);
+                if (result.ErrorCode != ErrorCodes.None)
+                    continue;
+
+                await _repository.AddReceiptAsync(result.Data!.ToReceipt());
+            }
+            
+            return Ok(receipts);
+        }
+        
         [HttpGet("ReceiptInfo")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
