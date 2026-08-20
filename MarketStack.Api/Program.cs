@@ -1,13 +1,5 @@
-using MarketStack.Data;
-using MarketStack.Data.Contracts.Repositories;
-using MarketStack.Data.Repositories;
-using MarketStack.Library.Contracts.Helper;
-using MarketStack.Library.Contracts.Receipt;
-using MarketStack.Library.Helper.Api;
-using MarketStack.Library.Receipt.Lidl;
-using MarketStack.Logic;
-using MarketStack.Logic.Contracts;
-using Microsoft.EntityFrameworkCore;
+using Hangfire;
+using MarketStack.Api.Builder;
 
 namespace MarketStack.Api
 {
@@ -36,6 +28,7 @@ namespace MarketStack.Api
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
+            app.UseHangfireDashboard();
 
             app.MapControllers();
 
@@ -44,15 +37,17 @@ namespace MarketStack.Api
 
         private static void CreateBuilder(WebApplicationBuilder builder)
         {
-            builder.Services.AddDbContext<MarketStackContext>(options =>
-                options.UseNpgsql(
-                    builder.Configuration.GetConnectionString("DefaultConnection")));
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-            builder.Services.AddScoped<IReceiptClient, LidlReceiptClient>();
-            builder.Services.AddScoped<IReceiptInformationManager, ReceiptInformationManager>();
-            builder.Services.AddScoped<IReceiptDatabaseManager, ReceiptDatabaseManager>();
-            builder.Services.AddScoped<IReceiptRepository, ReceiptRepository>();
-            builder.Services.AddScoped<IFetchClient, FetchClient>();
+            if (string.IsNullOrEmpty(connectionString))
+                return;
+
+            builder.CreateDatabase(connectionString)
+                .CreateHangfire(connectionString)
+                .CreateHangfireJobs()
+                .CreateRepositories()
+                .CreateManager()
+                .CreateClients();
         }
     }
 }
