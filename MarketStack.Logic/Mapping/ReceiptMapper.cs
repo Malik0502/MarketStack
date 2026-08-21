@@ -13,7 +13,7 @@ public static class ReceiptMapper
             Id = 0,
             ReceiptTicketId = receiptDto.TicketId,
             Store = receiptDto.Store,
-            PurchasedAt = DateTime.Parse(receiptDto.Date),
+            PurchasedAt = DateTime.SpecifyKind(DateTime.Parse(receiptDto.Date), DateTimeKind.Local).ToUniversalTime(),
             Items = receiptDto.ReceiptItems.Select(x => x.ToReceiptItem()).ToList(),
         };
     }

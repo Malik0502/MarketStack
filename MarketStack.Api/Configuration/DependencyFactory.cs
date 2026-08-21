@@ -13,7 +13,7 @@ using MarketStack.Logic;
 using MarketStack.Logic.Contracts;
 using Microsoft.EntityFrameworkCore;
 
-namespace MarketStack.Api.Builder;
+namespace MarketStack.Api.Configuration;
 
 public static class DependencyFactory
 {
@@ -41,6 +41,7 @@ public static class DependencyFactory
 
     public static WebApplicationBuilder CreateHangfireJobs(this WebApplicationBuilder builder)
     {
+        builder.Services.AddScoped<HangFireJobFactory>();
         builder.Services.AddScoped<ILidlJobService, LidlJobService>();
 
         return builder;

@@ -19,31 +19,6 @@ namespace MarketStack.Api.Controller
             _receiptInformationManager = receiptInformationManager;
             _repository = repository;
         }
-
-        // Date Time Error while saving to db
-        [HttpPost("ToDb")]
-        public async Task<ActionResult> FillDb(string languageCode = "de-DE")
-        {
-            var receipts = await _receiptInformationManager.GetReceiptsInfoAsync();
-
-            if (receipts.ErrorCode != ErrorCodes.None)
-            {
-                var httpStatus = receipts.ErrorCode.MapErrorCodeToHttpStatusCode();
-
-                return StatusCode((int)httpStatus, receipts);
-            }
-            
-            foreach (var receipt in receipts.Data!.Items)
-            {
-                var result = await _receiptInformationManager.GetReceiptAsync(receipt.Id, languageCode);
-                if (result.ErrorCode != ErrorCodes.None)
-                    continue;
-
-                await _repository.AddReceiptAsync(result.Data!.ToReceipt());
-            }
-            
-            return Ok(receipts);
-        }
         
         [HttpGet("ReceiptInfo")]
         [ProducesResponseType(StatusCodes.Status200OK)]

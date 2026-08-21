@@ -2,5 +2,5 @@
 
 public interface ILidlJobService
 {
-    public void ProcessLidlReceipt();
+    public Task ProcessLidlReceiptAsync();
 }

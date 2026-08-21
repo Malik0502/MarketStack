@@ -1,5 +1,5 @@
 using Hangfire;
-using MarketStack.Api.Builder;
+using MarketStack.Api.Configuration;
 
 namespace MarketStack.Api
 {
@@ -20,6 +20,8 @@ namespace MarketStack.Api
             
             var app = builder.Build();
 
+            CreateOrUpdateHangfireJobs(app);
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseOpenApi();
@@ -29,10 +31,17 @@ namespace MarketStack.Api
             app.UseHttpsRedirection();
             app.UseAuthorization();
             app.UseHangfireDashboard();
-
             app.MapControllers();
 
             app.Run();
+        }
+
+        public static void CreateOrUpdateHangfireJobs(WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var hangfireJobFactory = scope.ServiceProvider.GetRequiredService<HangFireJobFactory>();
+
+            hangfireJobFactory.CreateRecurringJobs();
         }
 
         private static void CreateBuilder(WebApplicationBuilder builder)
@@ -41,6 +50,8 @@ namespace MarketStack.Api
 
             if (string.IsNullOrEmpty(connectionString))
                 return;
+
+            builder.Services.Configure<ApplicationOptions>(builder.Configuration.GetSection("Application"));
 
             builder.CreateDatabase(connectionString)
                 .CreateHangfire(connectionString)
