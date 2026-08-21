@@ -1,8 +1,7 @@
 using MarketStack.Common.ApiBase;
-using MarketStack.Data.Contracts.Repositories;
+using MarketStack.Common.ErrorHandling;
 using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Logic.Contracts;
-using MarketStack.Logic.Mapping;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MarketStack.Api.Controller
@@ -12,12 +11,10 @@ namespace MarketStack.Api.Controller
     public class LidlReceiptController : ControllerBase
     {
         private readonly IReceiptInformationManager _receiptInformationManager;
-        private readonly IReceiptRepository _repository;
-
-        public LidlReceiptController(IReceiptInformationManager receiptInformationManager, IReceiptRepository repository)
+        
+        public LidlReceiptController(IReceiptInformationManager receiptInformationManager)
         {
             _receiptInformationManager = receiptInformationManager;
-            _repository = repository;
         }
         
         [HttpGet("ReceiptInfo")]

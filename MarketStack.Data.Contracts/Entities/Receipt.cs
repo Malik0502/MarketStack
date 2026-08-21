@@ -20,6 +20,11 @@ public class Receipt
     [StringLength(255)]
     public required string Store { get; set; }
 
+    [Column("chain")]
+    [Required]
+    [StringLength(255)]
+    public required string Chain { get; set; }
+
     [Column("purchasedAt")]
     [Required]
     public DateTime PurchasedAt { get; set; }

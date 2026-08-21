@@ -6,6 +6,8 @@ public class ReceiptItemDto
 {
     public string? ItemId { get; set; }
 
+    public string? InternalTicketId { get; set; }
+
     public string? ArticleName { get; set; }
 
     public decimal ArticlePrice { get; set; }

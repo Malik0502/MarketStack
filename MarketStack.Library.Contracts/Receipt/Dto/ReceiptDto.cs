@@ -8,6 +8,8 @@ public class ReceiptDto
 
     public required string Store { get; set; }
 
+    public required string Chain { get; set; }
+
     public required string Date { get; set; }
     
     /// <summary>

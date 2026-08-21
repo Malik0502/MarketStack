@@ -1,27 +1,25 @@
 ﻿using MarketStack.Data.Contracts.Repositories;
+using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Logic.Contracts;
+using MarketStack.Logic.Mapping;
 
 namespace MarketStack.Logic;
 
 public class ReceiptDatabaseManager : IReceiptDatabaseManager
 {
-    private readonly IReceiptInformationManager _receiptInformationManager;
     private readonly IReceiptRepository _receiptRepository;
-
-    public ReceiptDatabaseManager(IReceiptInformationManager receiptInformationManager, IReceiptRepository receiptRepository)
+    public ReceiptDatabaseManager(IReceiptRepository receiptRepository)
     {
-        _receiptInformationManager = receiptInformationManager;
         _receiptRepository = receiptRepository;
     }
 
-    public async Task Insert(string ticketId, string languageCode = "de-DE")
+    public async Task Insert(ReceiptDto receiptDto)
     {
-        var receipt = await _receiptInformationManager.GetReceiptAsync(ticketId, languageCode);
-        //_receiptRepository.AddReceiptAsync(receipt);
+        await _receiptRepository.AddReceiptAsync(receiptDto.ToReceipt());
     }
 
-    public async Task InsertReceipts()
+    public async Task InsertReceipts(List<ReceiptDto> receiptDtos)
     {
-        throw new NotImplementedException();
+        await _receiptRepository.AddReceiptRangeAsync(receiptDtos.ToReceipts());
     }
 }

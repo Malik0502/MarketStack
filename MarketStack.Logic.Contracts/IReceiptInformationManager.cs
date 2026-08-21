@@ -1,4 +1,4 @@
-﻿using MarketStack.Common.ApiBase;
+﻿using MarketStack.Common.ResponseBase;
 using MarketStack.Library.Contracts.Receipt.Dto;
 
 namespace MarketStack.Logic.Contracts;

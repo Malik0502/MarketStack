@@ -5,5 +5,12 @@ namespace MarketStack.Data.Contracts.Repositories;
 public interface IReceiptRepository
 {
     public Task AddReceiptAsync(Receipt receipt);
+
+    public Task AddReceiptRangeAsync(List<Receipt> receipts);
+
     public Receipt GetReceipt(int id);
+
+    public Task<List<Receipt>> GetReceiptsAsync();
+
+    public Task<List<ReceiptItem>> GetReceiptItemsAsync();
 }

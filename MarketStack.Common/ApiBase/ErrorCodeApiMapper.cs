@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using MarketStack.Common.ErrorHandling;
+using System.Net;
 
 namespace MarketStack.Common.ApiBase;
 

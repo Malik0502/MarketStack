@@ -1,9 +1,9 @@
 ﻿using MarketStack.Api.Configuration;
 using MarketStack.Api.Jobs.Interface;
-using MarketStack.Common.ApiBase;
-using MarketStack.Data.Contracts.Repositories;
+using MarketStack.Common.ErrorHandling;
+using MarketStack.Common.ResponseBase;
+using MarketStack.Library.Contracts.Receipt.Dto;
 using MarketStack.Logic.Contracts;
-using MarketStack.Logic.Mapping;
 using Microsoft.Extensions.Options;
 
 namespace MarketStack.Api.Jobs.Implementation;
@@ -11,26 +11,27 @@ namespace MarketStack.Api.Jobs.Implementation;
 public class LidlJobService : ILidlJobService
 {
     private readonly IReceiptInformationManager _receiptInformationManager;
-    private readonly IReceiptRepository _repository;
+    private readonly IReceiptDatabaseManager _receiptDatabaseManager;
     private readonly ApplicationOptions _options;
 
-    public LidlJobService(IReceiptInformationManager receiptInformationManager, IReceiptRepository repository, IOptions<ApplicationOptions> options)
+    public LidlJobService(IReceiptInformationManager receiptInformationManager, IReceiptDatabaseManager receiptDatabaseManager, IOptions<ApplicationOptions> options)
     {
         _receiptInformationManager = receiptInformationManager;
-        _repository = repository;
+        _receiptDatabaseManager = receiptDatabaseManager;
         _options = options.Value;
     }
 
     public async Task ProcessLidlReceiptAsync()
     {
-        var receipts = await _receiptInformationManager.GetReceiptsInfoAsync();
+        DataResponse<ReceiptPageInfoDto> receipts = await _receiptInformationManager.GetReceiptsInfoAsync();
 
         if (!receipts.Success)
         {
             return;
         }
 
-        var languageCode = _options.LanguageCode;
+        string languageCode = _options.LanguageCode;
+        List<ReceiptDto> receiptDtos = new List<ReceiptDto>();
 
         foreach (var receipt in receipts.Data!.Items)
         {
@@ -38,8 +39,9 @@ public class LidlJobService : ILidlJobService
             if (result.ErrorCode != ErrorCodes.None)
                 continue;
 
-            await _repository.AddReceiptAsync(result.Data!.ToReceipt());
+            receiptDtos.Add(result.Data!);
         }
 
+        await _receiptDatabaseManager.InsertReceipts(receiptDtos);
     }
 }

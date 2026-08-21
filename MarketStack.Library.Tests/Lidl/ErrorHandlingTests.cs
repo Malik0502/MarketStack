@@ -1,5 +1,7 @@
 using System.Net;
 using MarketStack.Common.ApiBase;
+using MarketStack.Common.ErrorHandling;
+using MarketStack.Common.ResponseBase;
 using MarketStack.Library.Contracts.Helper;
 using MarketStack.Library.Receipt.Lidl;
 using NSubstitute;

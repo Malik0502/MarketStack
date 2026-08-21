@@ -1,4 +1,4 @@
-﻿namespace MarketStack.Common.ApiBase;
+﻿namespace MarketStack.Common.ErrorHandling;
 
 public enum ErrorCodes
 {

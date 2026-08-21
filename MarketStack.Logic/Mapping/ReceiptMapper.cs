@@ -15,8 +15,22 @@ public static class ReceiptMapper
             Store = receiptDto.Store,
             PurchasedAt = DateTime.SpecifyKind(DateTime.Parse(receiptDto.Date), DateTimeKind.Local).ToUniversalTime(),
             Items = receiptDto.ReceiptItems.Select(x => x.ToReceiptItem()).ToList(),
+            Chain = receiptDto.Chain
         };
     }
+
+    public static List<Receipt> ToReceipts(this List<ReceiptDto> receiptDtos)
+    {
+        var result = new List<Receipt>();
+
+        foreach (var receiptDto in receiptDtos)
+        {
+            result.Add(receiptDto.ToReceipt());
+        }
+
+        return result;
+    }
+
 
     public static ReceiptItem ToReceiptItem(this ReceiptItemDto receiptItemDto)
     {
@@ -30,7 +44,8 @@ public static class ReceiptMapper
             Quantity = receiptItemDto.Quantity,
             TaxType = (int)receiptItemDto.TaxType,
             PromotionId = receiptItemDto.PromotionId,
-            StoreInternItemId = receiptItemDto.ItemId
+            StoreInternItemId = receiptItemDto.ItemId,
+            
         };
     }
 

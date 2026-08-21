@@ -7,6 +7,8 @@ using System.Net;
 using System.Text.Json;
 using MarketStack.Common.ApiBase;
 using MarketStack.Library.Contracts.Helper;
+using MarketStack.Common.ResponseBase;
+using MarketStack.Common.ErrorHandling;
 
 namespace MarketStack.Library.Receipt.Lidl
 {
@@ -21,7 +23,7 @@ namespace MarketStack.Library.Receipt.Lidl
         private readonly HttpClient _httpClient;
 
         private static string _authToken =
-            "eyJhbGciOiJSUzI1NiIsImtpZCI6IjdBQkE4MkIzRTQ4Qjg4MUI5QTg4MDU3N0ZBQUIwMTNENjIwOEYxMDNSUzI1NiIsInR5cCI6IkpXVCIsIng1dCI6ImVycUNzLVNMaUJ1YWlBVjMtcXNCUFdJSThRTSJ9.eyJuYmYiOjE3ODczMzA0MjIsImV4cCI6MTc4NzMzNDAyMiwiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5saWRsLmNvbSIsImF1ZCI6WyJMaWRsLkF1dGhlbnRpY2F0aW9uIiwiaHR0cHM6Ly9hY2NvdW50cy5saWRsLmNvbS9yZXNvdXJjZXMiXSwiY2xpZW50X2lkIjoiR2VybWFueUVjb21tZXJjZUNsaWVudCIsInN1YiI6IjQxODIxOTgwMTE2NzY3MzE1IiwiYXV0aF90aW1lIjoxNzg3MzMwNDIyLCJpZHAiOiJsb2NhbCIsImxlZ2FsX3Rlcm1zIjoiREUiLCJzaWQiOiIxNzNGMkNFM0YzQjhGNUMxMUFCQTlEN0EyMkY2NzU4QSIsImlhdCI6MTc4NzMzMDQyMiwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsIkxpZGwuQXV0aGVudGljYXRpb24iLCJvZmZsaW5lX2FjY2VzcyJdLCJhbXIiOlsicHdkIiwibWZhIl19.SmRFgxYZR672MdGLBC8uAiq7Z1HdRdt7oeUk8pL6dnePlPPBUsEclxZ-_dDZrfViddAaQHjISyyW30lRj9AcGgYB5Sm2S-y1sfjq1kZEK1ALhlotC2ABJ6B-ELQO6UF_IF_tjIZFH4jV68m1kuT4LLQMZH3eX5p0RbU3ctoXvDp_W3hN74eIwx_73jdnNMvCnTHJT1ysgCqNqUMkU65r5xM-vfH1qrXgX1mpinlHkhmOIRIzfF_dsJeDyzFmVjujlJQk31CqqCusst1L2U9Ylok__aweT5wkqIXyN4rwd9Heu_SC8qWF7LsilXH-yaLzHcwpfsfNK3jPOk8slE54hA";
+            "";
 
         // TODO: write unittest to check for all possible error codes and if data response works like intended
         public LidlReceiptClient(IFetchClient fetchClient)
@@ -115,6 +117,11 @@ namespace MarketStack.Library.Receipt.Lidl
                         "There was an error while parsing the ticket information.",
                         ErrorCodes.ParseError);
 
+                foreach (var receiptItemDto in receiptItems)
+                {
+                    receiptItemDto.InternalTicketId = ticketId;
+                }
+
                 var receiptPriceInfoItems = LidlReceiptParser.ParseToReceiptPrice(htmlPrintedReceipt);
 
                 if (receiptPriceInfoItems == null)
@@ -132,6 +139,7 @@ namespace MarketStack.Library.Receipt.Lidl
                     ReceiptItems = receiptItems,
                     ReceiptPriceInfos = receiptPriceInfoItems,
                     GrossPrice = receiptPriceInfoItems.Sum(x => x.TaxBaseAmount),
+                    Chain = StoreChains.Lidl
                 };
 
                 return DataResponse<ReceiptDto>.CreateSuccessResponse(

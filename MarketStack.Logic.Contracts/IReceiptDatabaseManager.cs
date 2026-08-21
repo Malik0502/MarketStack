@@ -1,8 +1,10 @@
-﻿namespace MarketStack.Logic.Contracts;
+﻿using MarketStack.Library.Contracts.Receipt.Dto;
+
+namespace MarketStack.Logic.Contracts;
 
 public interface IReceiptDatabaseManager
 {
-    public Task Insert(string ticketId, string languageCode = "de-DE");
+    public Task Insert(ReceiptDto receiptDto);
 
-    public Task InsertReceipts();
+    public Task InsertReceipts(List<ReceiptDto> receiptDtos);
 }

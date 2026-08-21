@@ -1,4 +1,6 @@
-﻿namespace MarketStack.Common.ApiBase;
+﻿using MarketStack.Common.ErrorHandling;
+
+namespace MarketStack.Common.ResponseBase;
 
 public class DataResponse<T> : BaseResponse where T : class
 {

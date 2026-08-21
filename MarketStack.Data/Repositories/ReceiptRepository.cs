@@ -1,5 +1,6 @@
 ﻿using MarketStack.Data.Contracts.Entities;
 using MarketStack.Data.Contracts.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace MarketStack.Data.Repositories;
 
@@ -18,8 +19,148 @@ public class ReceiptRepository : IReceiptRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task AddReceiptRangeAsync(List<Receipt> receipts)
+    {
+        if (receipts.Count == 0)
+            return;
+
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            // Bereits vorhandene Receipts suchen
+            var ticketIds = receipts
+                .Select(x => x.ReceiptTicketId)
+                .Distinct()
+                .ToList();
+
+            var chains = receipts
+                .Select(x => x.Chain)
+                .Distinct()
+                .ToList();
+
+            var existingReceipts = await _context.Receipt
+                .AsNoTracking()
+                .Where(x =>
+                    ticketIds.Contains(x.ReceiptTicketId) &&
+                    chains.Contains(x.Chain))
+                .Select(x => new
+                {
+                    x.Chain,
+                    x.ReceiptTicketId
+                })
+                .ToListAsync();
+
+            var existingReceiptKeys = existingReceipts
+                .Select(x => (x.Chain, x.ReceiptTicketId))
+                .ToHashSet();
+
+            var newReceipts = receipts
+                .Where(x =>
+                    !existingReceiptKeys.Contains(
+                        (x.Chain, x.ReceiptTicketId)))
+                .ToList();
+
+            if (newReceipts.Count == 0)
+            {
+                await transaction.CommitAsync();
+                return;
+            }
+
+            // ReceiptItems innerhalb desselben Receipts deduplizieren
+            foreach (var receipt in newReceipts)
+            {
+                receipt.Items = receipt.Items
+                    .GroupBy(x => new
+                    {
+                        ProductName = x.Product?.Name,
+                        x.Quantity,
+                        x.Price,
+                        x.TaxType,
+                        x.StoreInternItemId,
+                        x.PromotionId
+                    })
+                    .Select(x => x.First())
+                    .ToList();
+            }
+
+            // Alle benötigten Produktnamen
+            var productNames = newReceipts
+                .SelectMany(x => x.Items)
+                .Select(x => x.Product?.Name)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToList();
+
+            // Vorhandene Produkte laden
+            var existingProducts = await _context.Product
+                .Where(x => productNames.Contains(x.Name))
+                .ToListAsync();
+
+            var productsByName = existingProducts
+                .ToDictionary(x => x.Name);
+
+            // Produkte auflösen
+            foreach (var receipt in newReceipts)
+            {
+                foreach (var item in receipt.Items)
+                {
+                    var productName = item.Product?.Name;
+
+                    if (string.IsNullOrWhiteSpace(productName))
+                    {
+                        throw new InvalidOperationException(
+                            "ReceiptItem besitzt keinen Produktnamen.");
+                    }
+
+                    if (productsByName.TryGetValue(
+                            productName,
+                            out var existingProduct))
+                    {
+                        item.Product = existingProduct;
+                    }
+                    else
+                    {
+                        var newProduct = new Product
+                        {
+                            Name = productName
+                        };
+
+                        _context.Product.Add(newProduct);
+
+                        productsByName.Add(productName, newProduct);
+
+                        item.Product = newProduct;
+                    }
+                }
+            }
+
+            _context.Receipt.AddRange(newReceipts);
+
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
     public Receipt GetReceipt(int id)
     {
         return _context.Receipt.First(x => x.Id == id);
+    }
+
+    public async Task<List<Receipt>> GetReceiptsAsync()
+    {
+        return await _context.Receipt.ToListAsync();
+    }
+
+    public async Task<List<ReceiptItem>> GetReceiptItemsAsync()
+    {
+        return await _context.ReceiptItem.ToListAsync();
     }
 }
