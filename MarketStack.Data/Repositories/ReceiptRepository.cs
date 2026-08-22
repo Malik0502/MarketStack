@@ -19,6 +19,11 @@ public class ReceiptRepository : IReceiptRepository
         await _context.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Adds a range of receipts, receiptItems and products to the database
+    /// </summary>
+    /// <param name="receipts"></param>
+    /// <returns></returns>
     public async Task AddReceiptRangeAsync(List<Receipt> receipts)
     {
         if (receipts.Count == 0)
@@ -29,7 +34,7 @@ public class ReceiptRepository : IReceiptRepository
 
         try
         {
-            // Bereits vorhandene Receipts suchen
+            // get new receipts by filtering out existing ones
             var ticketIds = receipts
                 .Select(x => x.ReceiptTicketId)
                 .Distinct()
@@ -68,7 +73,7 @@ public class ReceiptRepository : IReceiptRepository
                 return;
             }
 
-            // ReceiptItems innerhalb desselben Receipts deduplizieren
+            // filter out possible receipt item duplicates inside receipt
             foreach (var receipt in newReceipts)
             {
                 receipt.Items = receipt.Items
@@ -85,7 +90,7 @@ public class ReceiptRepository : IReceiptRepository
                     .ToList();
             }
 
-            // Alle benötigten Produktnamen
+            // all productnames across new receipts
             var productNames = newReceipts
                 .SelectMany(x => x.Items)
                 .Select(x => x.Product?.Name)
@@ -93,7 +98,7 @@ public class ReceiptRepository : IReceiptRepository
                 .Distinct()
                 .ToList();
 
-            // Vorhandene Produkte laden
+            // load existing products
             var existingProducts = await _context.Product
                 .Where(x => productNames.Contains(x.Name))
                 .ToListAsync();
@@ -101,7 +106,7 @@ public class ReceiptRepository : IReceiptRepository
             var productsByName = existingProducts
                 .ToDictionary(x => x.Name);
 
-            // Produkte auflösen
+            // resolve products
             foreach (var receipt in newReceipts)
             {
                 foreach (var item in receipt.Items)
@@ -111,7 +116,7 @@ public class ReceiptRepository : IReceiptRepository
                     if (string.IsNullOrWhiteSpace(productName))
                     {
                         throw new InvalidOperationException(
-                            "ReceiptItem besitzt keinen Produktnamen.");
+                            "ReceiptItem has no product name");
                     }
 
                     if (productsByName.TryGetValue(

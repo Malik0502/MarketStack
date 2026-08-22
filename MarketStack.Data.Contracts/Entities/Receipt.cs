@@ -29,5 +29,5 @@ public class Receipt
     [Required]
     public DateTime PurchasedAt { get; set; }
 
-    public List<ReceiptItem> Items { get; set; }
+    public List<ReceiptItem> Items { get; set; } = [];
 }

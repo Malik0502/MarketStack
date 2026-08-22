@@ -45,6 +45,10 @@ namespace MarketStack.Library.Receipt.Lidl
                 new Cookie("authToken", _authToken));
         }
 
+        /// <summary>
+        /// Get the authentication token from lidl
+        /// </summary>
+        /// <returns>A <see cref="DataResponse{T}"/> containing the token as a <see cref="string"/></returns>
         public async Task<DataResponse<string>> GetAuthTokenAsync()
         {
             try
@@ -78,6 +82,12 @@ namespace MarketStack.Library.Receipt.Lidl
             }
         }
 
+        /// <summary>
+        /// Gets a specific receipt from lidl
+        /// </summary>
+        /// <param name="ticketId"></param>
+        /// <param name="languageCode"></param>
+        /// <returns>A <see cref="DataResponse{T}"/> containing an instance of <see cref="ReceiptDto"/></returns>
         public async Task<DataResponse<ReceiptDto>> GetReceiptAsync(string ticketId, string languageCode)
         {
             try
@@ -161,6 +171,10 @@ namespace MarketStack.Library.Receipt.Lidl
             }
         }
 
+        /// <summary>
+        /// Gets all receipts from lidl
+        /// </summary>
+        /// <returns>A <see cref="DataResponse{T}"/> containing an instance of <see cref="ReceiptPageInfoDto"/></returns>
         public async Task<DataResponse<ReceiptPageInfoDto>> GetReceiptsInfoAsync()
         {
             try

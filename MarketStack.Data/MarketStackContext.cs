@@ -11,8 +11,6 @@ public class MarketStackContext : DbContext
 
     public DbSet<ReceiptItem> ReceiptItem { get; set; }
 
-    public DbSet<ReceiptTotal> ReceiptTotal { get; set; }
-
     public MarketStackContext(DbContextOptions<MarketStackContext> options)
         : base(options)
     {
@@ -44,16 +42,6 @@ public class MarketStackContext : DbContext
         {
             r.ToTable("receipt_item");
             r.HasKey(x => x.Id);
-        });
-
-        modelBuilder.Entity<ReceiptTotal>(r =>
-        {
-            r.ToTable("receipt_total");
-            r.HasKey(x => x.Id);
-
-            r.HasOne<Receipt>()
-                .WithOne()
-                .HasForeignKey<ReceiptTotal>(x => x.Id);
         });
     }
 }

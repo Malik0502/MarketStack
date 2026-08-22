@@ -1,5 +1,4 @@
 ﻿using MarketStack.Data.Contracts.Entities;
-using MarketStack.Library.Contracts.Miscellaneous;
 using MarketStack.Library.Contracts.Receipt.Dto;
 
 namespace MarketStack.Logic.Mapping;
@@ -31,7 +30,6 @@ public static class ReceiptMapper
         return result;
     }
 
-
     public static ReceiptItem ToReceiptItem(this ReceiptItemDto receiptItemDto)
     {
         return new ReceiptItem()
@@ -46,19 +44,6 @@ public static class ReceiptMapper
             PromotionId = receiptItemDto.PromotionId,
             StoreInternItemId = receiptItemDto.ItemId,
             
-        };
-    }
-
-    public static ReceiptItemDto ToReceiptItemDto(this ReceiptItem receiptItem)
-    {
-        return new ReceiptItemDto()
-        {
-            ArticleName = receiptItem.Product!.Name,
-            ArticlePrice = receiptItem.Price,
-            ItemId = receiptItem.StoreInternItemId,
-            Quantity = receiptItem.Quantity,
-            TaxType = (TaxType)receiptItem.TaxType,
-            PromotionId = receiptItem.PromotionId
         };
     }
 }

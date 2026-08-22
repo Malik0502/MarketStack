@@ -4,15 +4,11 @@ namespace MarketStack.Common.ResponseBase;
 
 public class BaseResponse
 {
-    public bool Success { get; set; }
-
-    public Exception? Exception { get; set; }
-
     public string? Title { get; set; } = string.Empty;
-
     public string Message { get; set; } = string.Empty;
-
+    public bool Success { get; set; }
     public ErrorCodes ErrorCode { get; set; }
+    public Exception? Exception { get; set; }
 
     public static BaseResponse CreateSuccessMessage(string title, string message)
     { 

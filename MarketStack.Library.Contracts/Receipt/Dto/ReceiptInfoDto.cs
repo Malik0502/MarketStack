@@ -1,12 +1,17 @@
 namespace MarketStack.Library.Contracts.Receipt.Dto;
 
+/// <summary>
+/// Class representing receipt ticket id and store location for specific receipt calls
+/// </summary>
 public class ReceiptInfoDto
 {
+    /// <summary>
+    /// Id of the receipt
+    /// </summary>
     public string Id { get; set; }
-    public string Date { get; set; }
-    public decimal TotalAmount { get; set; }
-    public int ArticlesCount { get; set; }
+
+    /// <summary>
+    /// Location visited
+    /// </summary>
     public string Store { get; set; }
-    public bool IsHtml { get; set; }
-    public string Vendor { get; set; } 
 }
