@@ -3,17 +3,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MarketStack.Data.Contracts.Entities;
 
-public class Product
+public class ProductTag
 {
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Key]
     [Column("id")]
     public int Id { get; set; }
 
-    [Column("name")]
-    [Required]
-    [StringLength(255)]
-    public string Name { get; set; } = string.Empty;
+    [Column("product_id")]
+    public int ProductId { get; set; }
+    public Product Product { get; set; } = null!;
 
-    public ICollection<ProductTag> ProductTags { get; set; } = [];
+    [Column("tag_id")]
+    public int TagId { get; set; }
+    public Tag Tag { get; set; } = null!;
 }

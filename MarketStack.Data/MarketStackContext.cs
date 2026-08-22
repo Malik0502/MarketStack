@@ -11,6 +11,10 @@ public class MarketStackContext : DbContext
 
     public DbSet<ReceiptItem> ReceiptItem { get; set; }
 
+    public DbSet<Tag> Tag { get; set; }
+
+    public DbSet<ProductTag> ProductTag { get; set; }
+
     public MarketStackContext(DbContextOptions<MarketStackContext> options)
         : base(options)
     {
@@ -25,7 +29,8 @@ public class MarketStackContext : DbContext
 
             r.HasMany(x => x.Items)
                 .WithOne(x => x.Receipt)
-                .HasForeignKey(x => x.ReceiptId);
+                .HasForeignKey(x => x.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Product>(p =>
@@ -35,13 +40,44 @@ public class MarketStackContext : DbContext
 
             p.HasMany<ReceiptItem>()
                 .WithOne(x => x.Product)
-                .HasForeignKey(x => x.ProductId);
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<ReceiptItem>(r =>
+        modelBuilder.Entity<ReceiptItem>(ri =>
         {
-            r.ToTable("receipt_item");
-            r.HasKey(x => x.Id);
+            ri.ToTable("receipt_item");
+            ri.HasKey(x => x.Id);
+        });
+
+        modelBuilder.Entity<Tag>(t =>
+        {
+            t.ToTable("tag");
+            t.HasKey(x => x.Id);
+
+            t.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<ProductTag>(pt =>
+        {
+            pt.ToTable("product_tag");
+            pt.HasKey(x => new
+            {
+                x.ProductId,
+                x.TagId
+            });
+
+            pt.HasOne(x => x.Product)
+                .WithMany(x => x.ProductTags)
+                .HasForeignKey(x => x.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            pt.HasOne(x => x.Tag)
+                .WithMany(x => x.ProductTags)
+                .HasForeignKey(x => x.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
