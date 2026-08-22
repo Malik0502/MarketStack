@@ -9,8 +9,10 @@ using MarketStack.Library.Contracts.Helper;
 using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Helper.Api;
 using MarketStack.Library.Receipt.Lidl;
-using MarketStack.Logic;
-using MarketStack.Logic.Contracts;
+using MarketStack.Logic.Contracts.Service.Database;
+using MarketStack.Logic.Contracts.Service;
+using MarketStack.Logic.Service;
+using MarketStack.Logic.Service.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace MarketStack.Api.Configuration;
@@ -50,14 +52,17 @@ public static class DependencyFactory
     public static WebApplicationBuilder CreateRepositories(this WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<IReceiptRepository, ReceiptRepository>();
+        builder.Services.AddScoped<IReceiptItemRepository, ReceiptItemRepository>();
+        builder.Services.AddScoped<IReceiptPriceSummaryRepository, ReceiptPriceSummaryRepository>();
 
         return builder;
     }
 
-    public static WebApplicationBuilder CreateManager(this WebApplicationBuilder builder)
+    public static WebApplicationBuilder CreateServices(this WebApplicationBuilder builder)
     {
-        builder.Services.AddScoped<IReceiptInformationManager, ReceiptInformationManager>();
-        builder.Services.AddScoped<IReceiptDatabaseManager, ReceiptDatabaseManager>();
+        builder.Services.AddScoped<IReceiptLibraryService, ReceiptLibraryService>();
+        builder.Services.AddScoped<IReceiptImportService, ReceiptImportService>();
+        builder.Services.AddScoped<IPriceAnalysisService, PriceAnalysisService>();
 
         return builder;
     }

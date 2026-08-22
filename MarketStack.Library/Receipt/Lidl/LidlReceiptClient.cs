@@ -22,7 +22,7 @@ namespace MarketStack.Library.Receipt.Lidl
 
         private readonly HttpClient _httpClient;
 
-        private static string _authToken =
+        private static string _authToken = 
             "";
 
         // TODO: write unittest to check for all possible error codes and if data response works like intended

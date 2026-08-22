@@ -1,15 +1,15 @@
 ﻿using MarketStack.Common.ResponseBase;
 using MarketStack.Library.Contracts.Receipt;
 using MarketStack.Library.Contracts.Receipt.Dto;
-using MarketStack.Logic.Contracts;
+using MarketStack.Logic.Contracts.Service;
 
-namespace MarketStack.Logic;
+namespace MarketStack.Logic.Service;
 
-public class ReceiptInformationManager : IReceiptInformationManager
+public class ReceiptLibraryService : IReceiptLibraryService
 {
     private readonly IReceiptClient _receiptClient;
 
-    public ReceiptInformationManager(IReceiptClient receiptClient)
+    public ReceiptLibraryService(IReceiptClient receiptClient)
     {
         _receiptClient = receiptClient;
     }

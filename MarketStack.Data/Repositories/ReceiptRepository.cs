@@ -88,6 +88,17 @@ public class ReceiptRepository : IReceiptRepository
                     })
                     .Select(x => x.First())
                     .ToList();
+
+                // Filter out duplicate price summaries inside receipt
+                receipt.PriceSummaries = receipt.PriceSummaries
+                    .GroupBy(x => new
+                    {
+                        x.TaxType,
+                        x.TaxBaseAmount,
+                        x.TaxAmount
+                    })
+                    .Select(x => x.First())
+                    .ToList();
             }
 
             // all productnames across new receipts
@@ -164,8 +175,5 @@ public class ReceiptRepository : IReceiptRepository
         return await _context.Receipt.ToListAsync();
     }
 
-    public async Task<List<ReceiptItem>> GetReceiptItemsAsync()
-    {
-        return await _context.ReceiptItem.ToListAsync();
-    }
+    
 }

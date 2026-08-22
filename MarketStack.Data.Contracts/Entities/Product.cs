@@ -15,5 +15,7 @@ public class Product
     [StringLength(255)]
     public string Name { get; set; } = string.Empty;
 
+    public ICollection<ReceiptItem> ReceiptItems { get; set; } = [];
+
     public ICollection<ProductTag> ProductTags { get; set; } = [];
 }

@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using MarketStack.Data.Contracts.Entities;
+﻿using MarketStack.Data.Contracts.Entities;
 using MarketStack.Data.Contracts.Repositories;
 
 namespace MarketStack.Data.Repositories;

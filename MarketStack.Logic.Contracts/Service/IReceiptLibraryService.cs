@@ -1,9 +1,9 @@
 ﻿using MarketStack.Common.ResponseBase;
 using MarketStack.Library.Contracts.Receipt.Dto;
 
-namespace MarketStack.Logic.Contracts;
+namespace MarketStack.Logic.Contracts.Service;
 
-public interface IReceiptInformationManager
+public interface IReceiptLibraryService
 {
     public Task<DataResponse<string>> GetAuthTokenAsync();
 

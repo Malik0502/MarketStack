@@ -1,8 +1,8 @@
 ﻿using MarketStack.Library.Contracts.Receipt.Dto;
 
-namespace MarketStack.Logic.Contracts;
+namespace MarketStack.Logic.Contracts.Service.Database;
 
-public interface IReceiptDatabaseManager
+public interface IReceiptImportService
 {
     public Task Insert(ReceiptDto receiptDto);
 

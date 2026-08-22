@@ -1,6 +1,6 @@
 using MarketStack.Common.ApiBase;
 using MarketStack.Common.ErrorHandling;
-using MarketStack.Logic.Contracts;
+using MarketStack.Logic.Contracts.Service;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MarketStack.Api.Controller
@@ -9,11 +9,11 @@ namespace MarketStack.Api.Controller
     [ApiController]
     public class LidlReceiptController : ControllerBase
     {
-        private readonly IReceiptInformationManager _receiptInformationManager;
+        private readonly IReceiptLibraryService _receiptLibraryService;
         
-        public LidlReceiptController(IReceiptInformationManager receiptInformationManager)
+        public LidlReceiptController(IReceiptLibraryService receiptLibraryService)
         {
-            _receiptInformationManager = receiptInformationManager;
+            _receiptLibraryService = receiptLibraryService;
         }
         
         [HttpGet("Token")]
@@ -23,7 +23,7 @@ namespace MarketStack.Api.Controller
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<string>> GetToken()
         {
-            var result = await _receiptInformationManager.GetAuthTokenAsync();
+            var result = await _receiptLibraryService.GetAuthTokenAsync();
 
             if (result.ErrorCode != ErrorCodes.None)
             {

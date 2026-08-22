@@ -29,5 +29,7 @@ public class Receipt
     [Required]
     public DateTime PurchasedAt { get; set; }
 
-    public List<ReceiptItem> Items { get; set; } = [];
+    public ICollection<ReceiptItem> Items { get; set; } = [];
+
+    public ICollection<ReceiptPriceSummary> PriceSummaries { get; set; } = [];
 }

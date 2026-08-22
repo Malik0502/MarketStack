@@ -8,10 +8,10 @@ public class ReceiptInfoDto
     /// <summary>
     /// Id of the receipt
     /// </summary>
-    public string Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     /// <summary>
     /// Location visited
     /// </summary>
-    public string Store { get; set; }
+    public string Store { get; set; } = string.Empty;
 }

@@ -2,7 +2,7 @@
 
 namespace MarketStack.Common.ResponseBase;
 
-public class DataResponse<T> : BaseResponse where T : class
+public class DataResponse<T> : BaseResponse
 {
     public T? Data { get; set; }
 
@@ -17,7 +17,7 @@ public class DataResponse<T> : BaseResponse where T : class
         };
     }
 
-    public static DataResponse<T> CreateErrorResponse(string title, string message, ErrorCodes errorCode, Exception exception = null!)
+    public static DataResponse<T> CreateErrorResponse(string title, string message, ErrorCodes errorCode)
     {
         return new DataResponse<T>
         {
@@ -25,7 +25,6 @@ public class DataResponse<T> : BaseResponse where T : class
             Message = message,
             ErrorCode = errorCode,
             Success = false,
-            Exception = exception
         };
     }
 }

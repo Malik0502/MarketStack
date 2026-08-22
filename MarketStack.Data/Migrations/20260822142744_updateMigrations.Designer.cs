@@ -3,6 +3,7 @@ using System;
 using MarketStack.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MarketStack.Data.Migrations
 {
     [DbContext(typeof(MarketStackContext))]
-    partial class MarketStackContextModelSnapshot : ModelSnapshot
+    [Migration("20260822142744_updateMigrations")]
+    partial class updateMigrations
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -150,38 +153,6 @@ namespace MarketStack.Data.Migrations
                     b.ToTable("receipt_item", (string)null);
                 });
 
-            modelBuilder.Entity("MarketStack.Data.Contracts.Entities.ReceiptPriceSummary", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ReceiptId")
-                        .HasColumnType("integer")
-                        .HasColumnName("receipt_id");
-
-                    b.Property<decimal>("TaxAmount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("tax_amount");
-
-                    b.Property<decimal>("TaxBaseAmount")
-                        .HasColumnType("numeric")
-                        .HasColumnName("tax_inclusive_price");
-
-                    b.Property<int>("TaxType")
-                        .HasColumnType("integer")
-                        .HasColumnName("vat_rate");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReceiptId");
-
-                    b.ToTable("receipt_price_summary", (string)null);
-                });
-
             modelBuilder.Entity("MarketStack.Data.Contracts.Entities.Tag", b =>
                 {
                     b.Property<int>("Id")
@@ -224,7 +195,7 @@ namespace MarketStack.Data.Migrations
             modelBuilder.Entity("MarketStack.Data.Contracts.Entities.ReceiptItem", b =>
                 {
                     b.HasOne("MarketStack.Data.Contracts.Entities.Product", "Product")
-                        .WithMany("ReceiptItems")
+                        .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -240,29 +211,14 @@ namespace MarketStack.Data.Migrations
                     b.Navigation("Receipt");
                 });
 
-            modelBuilder.Entity("MarketStack.Data.Contracts.Entities.ReceiptPriceSummary", b =>
-                {
-                    b.HasOne("MarketStack.Data.Contracts.Entities.Receipt", "Receipt")
-                        .WithMany("PriceSummaries")
-                        .HasForeignKey("ReceiptId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Receipt");
-                });
-
             modelBuilder.Entity("MarketStack.Data.Contracts.Entities.Product", b =>
                 {
                     b.Navigation("ProductTags");
-
-                    b.Navigation("ReceiptItems");
                 });
 
             modelBuilder.Entity("MarketStack.Data.Contracts.Entities.Receipt", b =>
                 {
                     b.Navigation("Items");
-
-                    b.Navigation("PriceSummaries");
                 });
 
             modelBuilder.Entity("MarketStack.Data.Contracts.Entities.Tag", b =>

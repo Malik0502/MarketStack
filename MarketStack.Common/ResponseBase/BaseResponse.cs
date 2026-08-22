@@ -8,7 +8,6 @@ public class BaseResponse
     public string Message { get; set; } = string.Empty;
     public bool Success { get; set; }
     public ErrorCodes ErrorCode { get; set; }
-    public Exception? Exception { get; set; }
 
     public static BaseResponse CreateSuccessMessage(string title, string message)
     { 
@@ -20,7 +19,7 @@ public class BaseResponse
         };
     }
 
-    public static BaseResponse CreateErrorMessage(string title, string message, ErrorCodes errorCode, Exception exception = null!)
+    public static BaseResponse CreateErrorMessage(string title, string message, ErrorCodes errorCode)
     {
         return new BaseResponse
         {
@@ -28,7 +27,6 @@ public class BaseResponse
             Message = message,
             ErrorCode = errorCode,
             Success = false,
-            Exception = exception
         };
     }
 }

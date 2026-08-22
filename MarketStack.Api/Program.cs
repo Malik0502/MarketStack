@@ -67,7 +67,7 @@ namespace MarketStack.Api
                 .CreateHangfire(connectionString)
                 .CreateHangfireJobs()
                 .CreateRepositories()
-                .CreateManager()
+                .CreateServices()
                 .CreateClients();
         }
     }

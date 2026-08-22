@@ -1,14 +1,14 @@
 ﻿using MarketStack.Data.Contracts.Repositories;
 using MarketStack.Library.Contracts.Receipt.Dto;
-using MarketStack.Logic.Contracts;
+using MarketStack.Logic.Contracts.Service.Database;
 using MarketStack.Logic.Mapping;
 
-namespace MarketStack.Logic;
+namespace MarketStack.Logic.Service.Database;
 
-public class ReceiptDatabaseManager : IReceiptDatabaseManager
+public class ReceiptImportService : IReceiptImportService
 {
     private readonly IReceiptRepository _receiptRepository;
-    public ReceiptDatabaseManager(IReceiptRepository receiptRepository)
+    public ReceiptImportService(IReceiptRepository receiptRepository)
     {
         _receiptRepository = receiptRepository;
     }

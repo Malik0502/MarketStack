@@ -15,6 +15,8 @@ public class MarketStackContext : DbContext
 
     public DbSet<ProductTag> ProductTag { get; set; }
 
+    public DbSet<ReceiptPriceSummary> ReceiptPriceSummary { get; set; }
+
     public MarketStackContext(DbContextOptions<MarketStackContext> options)
         : base(options)
     {
@@ -31,6 +33,11 @@ public class MarketStackContext : DbContext
                 .WithOne(x => x.Receipt)
                 .HasForeignKey(x => x.ReceiptId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            r.HasMany(x => x.PriceSummaries)
+                .WithOne(x => x.Receipt)
+                .HasForeignKey(x => x.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Product>(p =>
@@ -38,7 +45,7 @@ public class MarketStackContext : DbContext
             p.ToTable("product");
             p.HasKey(x => x.Id);
 
-            p.HasMany<ReceiptItem>()
+            p.HasMany(x => x.ReceiptItems)
                 .WithOne(x => x.Product)
                 .HasForeignKey(x => x.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
@@ -63,6 +70,7 @@ public class MarketStackContext : DbContext
         modelBuilder.Entity<ProductTag>(pt =>
         {
             pt.ToTable("product_tag");
+
             pt.HasKey(x => new
             {
                 x.ProductId,
@@ -77,6 +85,17 @@ public class MarketStackContext : DbContext
             pt.HasOne(x => x.Tag)
                 .WithMany(x => x.ProductTags)
                 .HasForeignKey(x => x.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ReceiptPriceSummary>(rps =>
+        {
+            rps.ToTable("receipt_price_summary");
+            rps.HasKey(x => x.Id);
+
+            rps.HasOne(x => x.Receipt)
+                .WithMany(x => x.PriceSummaries)
+                .HasForeignKey(x => x.ReceiptId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

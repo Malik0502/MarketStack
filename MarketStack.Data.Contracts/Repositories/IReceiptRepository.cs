@@ -11,6 +11,4 @@ public interface IReceiptRepository
     public Receipt GetReceipt(int id);
 
     public Task<List<Receipt>> GetReceiptsAsync();
-
-    public Task<List<ReceiptItem>> GetReceiptItemsAsync();
 }
