@@ -1,5 +1,7 @@
 using Hangfire;
 using MarketStack.Api.Configuration;
+using MarketStack.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace MarketStack.Api
 {
@@ -21,6 +23,7 @@ namespace MarketStack.Api
             var app = builder.Build();
 
             CreateOrUpdateHangfireJobs(app);
+            CreateOrUpdateDatabase(app);
 
             if (app.Environment.IsDevelopment())
             {
@@ -42,6 +45,13 @@ namespace MarketStack.Api
             var hangfireJobFactory = scope.ServiceProvider.GetRequiredService<HangFireJobFactory>();
 
             hangfireJobFactory.CreateRecurringJobs();
+        }
+
+        public static void CreateOrUpdateDatabase(WebApplication app)
+        {
+            using var scope = app.Services.CreateAsyncScope();
+            var context = scope.ServiceProvider.GetRequiredService<MarketStackContext>();
+            context.Database.Migrate();
         }
 
         private static void CreateBuilder(WebApplicationBuilder builder)
