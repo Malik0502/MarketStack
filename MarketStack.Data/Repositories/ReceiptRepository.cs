@@ -20,7 +20,7 @@ public class ReceiptRepository : IReceiptRepository
     }
 
     /// <summary>
-    /// Adds a range of receipts, receiptItems and products to the database
+    /// Adds a range of receipts as well as connected receipt-Items and products to the database
     /// </summary>
     /// <param name="receipts"></param>
     /// <returns></returns>
@@ -34,37 +34,23 @@ public class ReceiptRepository : IReceiptRepository
 
         try
         {
-            // get new receipts by filtering out existing ones
-            var ticketIds = receipts
-                .Select(x => x.ReceiptTicketId)
-                .Distinct()
-                .ToList();
-
-            var chains = receipts
-                .Select(x => x.Chain)
-                .Distinct()
-                .ToList();
-
-            var existingReceipts = await _context.Receipt
+            // Get the purchase date of the latest receipt in the database.
+            var lastPurchasedAt = await _context.Receipt
                 .AsNoTracking()
+                .MaxAsync(x => (DateTime?)x.PurchasedAt);
+
+            // Lidl receipts are chronological, so every receipt after the
+            // latest stored receipt must be new.
+            var newReceipts = receipts
                 .Where(x =>
-                    ticketIds.Contains(x.ReceiptTicketId) &&
-                    chains.Contains(x.Chain))
-                .Select(x => new
+                    !lastPurchasedAt.HasValue ||
+                    x.PurchasedAt > lastPurchasedAt.Value)
+                .GroupBy(x => new
                 {
                     x.Chain,
                     x.ReceiptTicketId
                 })
-                .ToListAsync();
-
-            var existingReceiptKeys = existingReceipts
-                .Select(x => (x.Chain, x.ReceiptTicketId))
-                .ToHashSet();
-
-            var newReceipts = receipts
-                .Where(x =>
-                    !existingReceiptKeys.Contains(
-                        (x.Chain, x.ReceiptTicketId)))
+                .Select(x => x.First())
                 .ToList();
 
             if (newReceipts.Count == 0)
@@ -73,7 +59,7 @@ public class ReceiptRepository : IReceiptRepository
                 return;
             }
 
-            // filter out possible receipt item duplicates inside receipt
+            // Filter out possible receipt item duplicates inside receipt
             foreach (var receipt in newReceipts)
             {
                 receipt.Items = receipt.Items
@@ -101,7 +87,7 @@ public class ReceiptRepository : IReceiptRepository
                     .ToList();
             }
 
-            // all productnames across new receipts
+            // All product names across new receipts
             var productNames = newReceipts
                 .SelectMany(x => x.Items)
                 .Select(x => x.Product?.Name)
@@ -109,7 +95,7 @@ public class ReceiptRepository : IReceiptRepository
                 .Distinct()
                 .ToList();
 
-            // load existing products
+            // Load existing products
             var existingProducts = await _context.Product
                 .Where(x => productNames.Contains(x.Name))
                 .ToListAsync();
@@ -117,7 +103,7 @@ public class ReceiptRepository : IReceiptRepository
             var productsByName = existingProducts
                 .ToDictionary(x => x.Name);
 
-            // resolve products
+            // Resolve products
             foreach (var receipt in newReceipts)
             {
                 foreach (var item in receipt.Items)
