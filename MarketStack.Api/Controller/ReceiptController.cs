@@ -1,5 +1,6 @@
 ﻿using MarketStack.Common.ApiBase;
 using MarketStack.Common.ResponseBase;
+using MarketStack.Logic.Contracts.Dto;
 using MarketStack.Logic.Contracts.Service;
 using Microsoft.AspNetCore.Mvc;
 
@@ -38,6 +39,38 @@ public class ReceiptController : ControllerBase
     public async Task<ActionResult<DataResponse<decimal>>> GetTotalTaxExpenses()
     {
         DataResponse<decimal> result = await _priceAnalysisService.GetTotalTaxExpensesAsync();
+
+        if (!result.Success)
+        {
+            var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+            return StatusCode((int)httpStatus, result);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpGet("expense-history")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetExpenseHistory()
+    {
+        DataResponse<IDictionary<string, MonthlyExpenseSummary>> result = await _priceAnalysisService.GetExpenseHistory();
+
+        if (!result.Success)
+        {
+            var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+            return StatusCode((int)httpStatus, result);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpGet("tax-expense-history")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetTaxExpenseHistory()
+    {
+        DataResponse<IDictionary<string, MonthlyExpenseSummary>> result = await _priceAnalysisService.GetTaxExpenseHistory();
 
         if (!result.Success)
         {
