@@ -11,6 +11,18 @@ namespace MarketStack.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: "AllowedOrigins",
+                    policy =>
+                    {
+                        policy
+                            .WithOrigins("http://localhost:5173")
+                            .WithMethods("GET", "POST", "PUT")
+                            .AllowAnyHeader();
+                    });
+            });
+
             builder.Services.AddControllers();
 
             builder.Services.AddOpenApiDocument(config =>
@@ -21,6 +33,9 @@ namespace MarketStack.Api
             CreateBuilder(builder);
             
             var app = builder.Build();
+
+            app.UseHttpsRedirection();
+            app.UseCors("AllowedOrigins");
 
             CreateOrUpdateHangfireJobs(app);
             CreateOrUpdateDatabase(app);
