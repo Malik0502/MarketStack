@@ -5,4 +5,6 @@ namespace MarketStack.Data.Contracts.Repositories;
 public interface IReceiptPriceSummaryRepository
 {
     public Task<ICollection<ReceiptPriceSummary>> GetReceiptPriceSummariesAsync();
+
+    public Task<ICollection<ReceiptPriceSummary>> GetReceiptPriceSummaryFromReceiptAsync(int id);
 }

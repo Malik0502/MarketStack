@@ -49,6 +49,38 @@ public class ReceiptController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("last-week-expenses")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetLastWeekExpense()
+    {
+        DataResponse<decimal> result = await _priceAnalysisService.GetLastWeeksExpensesAsync();
+
+        if (!result.Success)
+        {
+            var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+            return StatusCode((int)httpStatus, result);
+        }
+
+        return Ok(result);
+    }
+
+    [HttpGet("last-week-tax-expenses")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetLastWeekTaxExpense()
+    {
+        DataResponse<decimal> result = await _priceAnalysisService.GetLastWeeksTaxExpensesAsync();
+
+        if (!result.Success)
+        {
+            var httpStatus = result.ErrorCode.MapErrorCodeToHttpStatusCode();
+            return StatusCode((int)httpStatus, result);
+        }
+
+        return Ok(result);
+    }
+
     [HttpGet("expense-history")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]

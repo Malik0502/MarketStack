@@ -45,6 +45,20 @@ public class PriceAnalysisService : IPriceAnalysisService
         return DataResponse<decimal>.CreateSuccessResponse(totalTaxExpenses, "Succesful", "Succesfully calculated the total tax expenses");
     }
 
+    public async Task<DataResponse<decimal>> GetLastWeeksExpensesAsync()
+    {
+        decimal result = await CalculateLastWeeksTotalExpense(isTaxExpense: false);
+
+        return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated last week expenses");
+    }
+
+    public async Task<DataResponse<decimal>> GetLastWeeksTaxExpensesAsync()
+    {
+        decimal result = await CalculateLastWeeksTotalExpense(isTaxExpense: true);
+
+        return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated last week expenses");
+    }
+
     public async Task<DataResponse<IDictionary<string, MonthlyExpenseSummary>>> GetExpenseHistory()
     {
         Dictionary<string, MonthlyExpenseSummary> result = [];
@@ -56,23 +70,7 @@ public class PriceAnalysisService : IPriceAnalysisService
         foreach (var summary in priceSummaries.OrderBy(x => x.ReceiptId))
         {
             Receipt connectedReceipt = receipts.First(x => x.Id == summary.ReceiptId);
-
-            if (result.Count == 0 )
-            {
-                AddToDictionary(result, summary.TaxBaseAmount, connectedReceipt);
-                continue;
-            }
-
-            bool isExisting = result
-                .TryGetValue($"{connectedReceipt.PurchasedAt.Month}-{connectedReceipt.PurchasedAt.Year}", out MonthlyExpenseSummary? expenseSummary);
-
-            if (!isExisting)
-            {
-                AddToDictionary(result, summary.TaxBaseAmount, connectedReceipt);
-                continue;
-            }
-
-            expenseSummary?.Expense += summary.TaxBaseAmount;
+            CalculateExpenseHistory(connectedReceipt, summary.TaxBaseAmount, result);
         }
 
         result = result
@@ -83,6 +81,8 @@ public class PriceAnalysisService : IPriceAnalysisService
             "Success",
             "Successfully exported monthly expense history");
     }
+
+    
 
     public async Task<DataResponse<IDictionary<string, MonthlyExpenseSummary>>> GetTaxExpenseHistory()
     {
@@ -95,23 +95,7 @@ public class PriceAnalysisService : IPriceAnalysisService
         foreach (var summary in priceSummaries.OrderBy(x => x.ReceiptId))
         {
             Receipt connectedReceipt = receipts.First(x => x.Id == summary.ReceiptId);
-
-            if (result.Count == 0)
-            {
-                AddToDictionary(result, summary.TaxAmount, connectedReceipt);
-                continue;
-            }
-
-            bool isExisting = result
-                .TryGetValue($"{connectedReceipt.PurchasedAt.Month}-{connectedReceipt.PurchasedAt.Year}", out MonthlyExpenseSummary? expenseSummary);
-
-            if (!isExisting)
-            {
-                AddToDictionary(result, summary.TaxAmount, connectedReceipt);
-                continue;
-            }
-
-            expenseSummary?.Expense += summary.TaxAmount;
+            CalculateExpenseHistory(connectedReceipt, summary.TaxAmount, result);
         }
 
         result = result
@@ -121,6 +105,67 @@ public class PriceAnalysisService : IPriceAnalysisService
         return DataResponse<IDictionary<string, MonthlyExpenseSummary>>.CreateSuccessResponse(result,
             "Success",
             "Successfully exported monthly tax expense history");
+    }
+
+    private async Task<decimal> CalculateLastWeeksTotalExpense(bool isTaxExpense)
+    {
+        ICollection<Receipt> receipts = await _receiptRepository.GetReceiptsAsync();
+
+        DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+
+        // today - one week
+        DateOnly start = today.AddDays(-6);
+
+        decimal result = 0;
+        foreach (var receipt in receipts)
+        {
+            DateOnly purchasedDate = DateOnly.FromDateTime(receipt.PurchasedAt);
+
+            bool isInLast7Days = purchasedDate >= start && purchasedDate <= today;
+
+            if (!isInLast7Days)
+                continue;
+
+            ICollection<ReceiptPriceSummary> priceSummaries =
+                await _priceSummaryRepository.GetReceiptPriceSummaryFromReceiptAsync(receipt.Id);
+
+            if (priceSummaries.Count == 0)
+                continue;
+
+
+            foreach (var summary in priceSummaries)
+            {
+                if (isTaxExpense)
+                {
+                    result += summary.TaxAmount;
+                    continue;
+                }
+
+                result += summary.TaxBaseAmount;
+            }
+        }
+
+        return result;
+    }
+
+    private static void CalculateExpenseHistory(Receipt receipt, decimal amount, Dictionary<string, MonthlyExpenseSummary> result)
+    {
+        if (result.Count == 0)
+        {
+            AddToDictionary(result, amount, receipt);
+            return;
+        }
+
+        bool isExisting = result
+            .TryGetValue($"{receipt.PurchasedAt.Month}-{receipt.PurchasedAt.Year}", out MonthlyExpenseSummary? expenseSummary);
+
+        if (!isExisting)
+        {
+            AddToDictionary(result, amount, receipt);
+            return;
+        }
+
+        expenseSummary?.Expense += amount;
     }
 
     private static void AddToDictionary(Dictionary<string, MonthlyExpenseSummary> dictionary, decimal amount, Receipt connectedReceipt)

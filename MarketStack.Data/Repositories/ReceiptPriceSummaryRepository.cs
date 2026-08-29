@@ -16,4 +16,9 @@ public class ReceiptPriceSummaryRepository : IReceiptPriceSummaryRepository
     {
         return await _context.ReceiptPriceSummary.ToListAsync();
     }
+
+    public async Task<ICollection<ReceiptPriceSummary>> GetReceiptPriceSummaryFromReceiptAsync(int id)
+    {
+        return await _context.ReceiptPriceSummary.Where(x => x.ReceiptId == id).ToListAsync();
+    }
 }
