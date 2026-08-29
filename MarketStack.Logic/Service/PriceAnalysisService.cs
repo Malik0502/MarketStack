@@ -59,7 +59,7 @@ public class PriceAnalysisService : IPriceAnalysisService
 
             if (result.Count == 0 )
             {
-                AddToDictionary(result, summary, connectedReceipt);
+                AddToDictionary(result, summary.TaxBaseAmount, connectedReceipt);
                 continue;
             }
 
@@ -68,12 +68,16 @@ public class PriceAnalysisService : IPriceAnalysisService
 
             if (!isExisting)
             {
-                AddToDictionary(result, summary, connectedReceipt);
+                AddToDictionary(result, summary.TaxBaseAmount, connectedReceipt);
                 continue;
             }
 
             expenseSummary?.Expense += summary.TaxBaseAmount;
         }
+
+        result = result
+            .OrderByDescending(x => x.Value.PurchasedAt)
+            .ToDictionary(x => x.Key, x => x.Value);
 
         return DataResponse<IDictionary<string, MonthlyExpenseSummary>>.CreateSuccessResponse(result,
             "Success",
@@ -94,7 +98,7 @@ public class PriceAnalysisService : IPriceAnalysisService
 
             if (result.Count == 0)
             {
-                AddToDictionary(result, summary, connectedReceipt);
+                AddToDictionary(result, summary.TaxAmount, connectedReceipt);
                 continue;
             }
 
@@ -103,26 +107,30 @@ public class PriceAnalysisService : IPriceAnalysisService
 
             if (!isExisting)
             {
-                AddToDictionary(result, summary, connectedReceipt);
+                AddToDictionary(result, summary.TaxAmount, connectedReceipt);
                 continue;
             }
 
             expenseSummary?.Expense += summary.TaxAmount;
         }
 
+        result = result
+            .OrderByDescending(x => x.Value.PurchasedAt)
+            .ToDictionary(x => x.Key, x => x.Value);
+
         return DataResponse<IDictionary<string, MonthlyExpenseSummary>>.CreateSuccessResponse(result,
             "Success",
             "Successfully exported monthly tax expense history");
     }
 
-    private static void AddToDictionary(Dictionary<string, MonthlyExpenseSummary> dictionary, ReceiptPriceSummary summary, Receipt connectedReceipt)
+    private static void AddToDictionary(Dictionary<string, MonthlyExpenseSummary> dictionary, decimal amount, Receipt connectedReceipt)
     {
         // set day of datetime to 1
         var cleanDateTime = new DateTime(connectedReceipt.PurchasedAt.Year, connectedReceipt.PurchasedAt.Month, day: 1); 
 
         var expense = new MonthlyExpenseSummary()
         {
-            Expense = summary.TaxBaseAmount,
+            Expense = amount,
             PurchasedAt = DateOnly.FromDateTime(cleanDateTime)
         };
 
