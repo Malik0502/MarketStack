@@ -49,12 +49,12 @@ public class ReceiptController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("last-week-expenses")]
+    [HttpGet("percentage-change")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetLastWeekExpense()
     {
-        DataResponse<decimal> result = await _priceAnalysisService.GetLastWeeksExpensesAsync();
+        DataResponse<decimal> result = await _priceAnalysisService.GetPercentageChangeSinceLastWeekAsync();
 
         if (!result.Success)
         {
@@ -65,12 +65,12 @@ public class ReceiptController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("last-week-tax-expenses")]
+    [HttpGet("tax-percentage-change")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
-    public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetLastWeekTaxExpense()
+    public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> Get()
     {
-        DataResponse<decimal> result = await _priceAnalysisService.GetLastWeeksTaxExpensesAsync();
+        DataResponse<decimal> result = await _priceAnalysisService.GetTaxPercentageChangeSinceLastWeekAsync();
 
         if (!result.Success)
         {

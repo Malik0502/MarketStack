@@ -9,9 +9,9 @@ public interface IPriceAnalysisService
 
     public Task<DataResponse<decimal>> GetTotalTaxExpensesAsync();
 
-    public Task<DataResponse<decimal>> GetLastWeeksExpensesAsync();
+    public Task<DataResponse<decimal>> GetPercentageChangeSinceLastWeekAsync();
 
-    public Task<DataResponse<decimal>> GetLastWeeksTaxExpensesAsync();
+    public Task<DataResponse<decimal>> GetTaxPercentageChangeSinceLastWeekAsync();
 
     public Task<DataResponse<IDictionary<string, MonthlyExpenseSummary>>> GetExpenseHistory();
 

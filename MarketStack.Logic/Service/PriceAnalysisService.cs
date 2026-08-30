@@ -45,16 +45,28 @@ public class PriceAnalysisService : IPriceAnalysisService
         return DataResponse<decimal>.CreateSuccessResponse(totalTaxExpenses, "Succesful", "Succesfully calculated the total tax expenses");
     }
 
-    public async Task<DataResponse<decimal>> GetLastWeeksExpensesAsync()
+    public async Task<DataResponse<decimal>> GetPercentageChangeSinceLastWeekAsync()
     {
-        decimal result = await CalculateLastWeeksTotalExpense(isTaxExpense: false);
+        decimal lastWeekExpense = await CalculateLastWeeksTotalExpense(isTaxExpense: false);
+
+        DataResponse<decimal> totalExpense = await GetTotalExpensesAsync();
+
+        decimal lastWeekTotalExpense = totalExpense.Data - lastWeekExpense;
+
+        decimal result = Math.Round((totalExpense.Data - lastWeekTotalExpense) / lastWeekTotalExpense * 100, 2);
 
         return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated last week expenses");
     }
 
-    public async Task<DataResponse<decimal>> GetLastWeeksTaxExpensesAsync()
+    public async Task<DataResponse<decimal>> GetTaxPercentageChangeSinceLastWeekAsync()
     {
-        decimal result = await CalculateLastWeeksTotalExpense(isTaxExpense: true);
+        decimal lastWeekExpense = await CalculateLastWeeksTotalExpense(isTaxExpense: true);
+
+        DataResponse<decimal> totalExpense = await GetTotalTaxExpensesAsync();
+
+        decimal lastWeekTotalExpense = totalExpense.Data - lastWeekExpense;
+
+        decimal result = Math.Round((totalExpense.Data - lastWeekTotalExpense) / lastWeekTotalExpense * 100, 2);
 
         return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated last week expenses");
     }
