@@ -36,7 +36,9 @@ public class ReceiptAnalysisService : IReceiptAnalysisService
         decimal totalSum = priceSummaries.Sum(x => x.TaxBaseAmount);
         decimal result = totalSum / totalReceipts;
 
-        return DataResponse<decimal>.CreateSuccessResponse(result, "Success",
+        return DataResponse<decimal>.CreateSuccessResponse(
+            Math.Round(result, 2),
+            "Success",
             "Successfully calculated the average purchase value");
     }
 
@@ -57,7 +59,9 @@ public class ReceiptAnalysisService : IReceiptAnalysisService
 
         decimal result = (totalSumNormalArticles + totalWeighedArticles) / totalReceipts;
 
-        return DataResponse<decimal>.CreateSuccessResponse(result, "Success",
+        return DataResponse<decimal>.CreateSuccessResponse(
+            Math.Round(result, 2),
+            "Success", 
             "Successfully calculated the average items per purchase");
     }
 
@@ -80,7 +84,9 @@ public class ReceiptAnalysisService : IReceiptAnalysisService
 
         decimal result = itemCount == 0 ? 0 : (itemsWithDiscount / itemCount) * 100;
 
-        return DataResponse<decimal>.CreateSuccessResponse(result, "Success",
+        return DataResponse<decimal>.CreateSuccessResponse(
+            Math.Round(result, 2),
+            "Success",
             "Successfully calculated the share of items with a discount");
     }
 
