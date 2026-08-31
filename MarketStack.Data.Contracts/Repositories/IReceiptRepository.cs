@@ -8,7 +8,11 @@ public interface IReceiptRepository
 
     public Task AddReceiptRangeAsync(List<Receipt> receipts);
 
-    public Receipt GetReceipt(int id);
+    public Receipt GetReceiptAsync(int id);
 
     public Task<List<Receipt>> GetReceiptsAsync();
+
+    public Task<int> GetTotalReceips();
+
+    public Task<List<Receipt>> GetReceiptsIncludingPricesAsync();
 }

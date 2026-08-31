@@ -19,6 +19,27 @@ public class ReceiptRepository : IReceiptRepository
         await _context.SaveChangesAsync();
     }
 
+
+    public Receipt GetReceiptAsync(int id)
+    {
+        return _context.Receipt.First(x => x.Id == id);
+    }
+
+    public async Task<List<Receipt>> GetReceiptsAsync()
+    {
+        return await _context.Receipt.ToListAsync();
+    }
+
+    public async Task<int> GetTotalReceips()
+    {
+        return await _context.Receipt.CountAsync();
+    }
+
+    public async Task<List<Receipt>> GetReceiptsIncludingPricesAsync()
+    {
+        return await _context.Receipt.Include(x => x.PriceSummaries).ToListAsync();
+    }
+
     /// <summary>
     /// Adds a range of receipts as well as connected receipt-Items and products to the database
     /// </summary>
@@ -151,15 +172,4 @@ public class ReceiptRepository : IReceiptRepository
         }
     }
 
-    public Receipt GetReceipt(int id)
-    {
-        return _context.Receipt.First(x => x.Id == id);
-    }
-
-    public async Task<List<Receipt>> GetReceiptsAsync()
-    {
-        return await _context.Receipt.ToListAsync();
-    }
-
-    
 }

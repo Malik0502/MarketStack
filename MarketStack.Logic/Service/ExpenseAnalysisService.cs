@@ -28,7 +28,7 @@ public class ExpenseAnalysisService : IExpenseAnalysisService
             totalExpense += data.TaxBaseAmount;
         }
 
-        return DataResponse<decimal>.CreateSuccessResponse(totalExpense, "Succesful", "Succesfully calculated the total expenses of all purchases");
+        return DataResponse<decimal>.CreateSuccessResponse(totalExpense, "Success", "Succesfully calculated the total expenses of all purchases");
     }
 
     public async Task<DataResponse<decimal>> GetTotalTaxExpensesAsync()
@@ -42,7 +42,7 @@ public class ExpenseAnalysisService : IExpenseAnalysisService
             totalTaxExpenses += data.TaxAmount;
         }
 
-        return DataResponse<decimal>.CreateSuccessResponse(totalTaxExpenses, "Succesful", "Succesfully calculated the total tax expenses");
+        return DataResponse<decimal>.CreateSuccessResponse(totalTaxExpenses, "Success", "Succesfully calculated the total tax expenses");
     }
 
     public async Task<DataResponse<decimal>> GetPercentageChangeSinceLastWeekAsync()
@@ -55,7 +55,7 @@ public class ExpenseAnalysisService : IExpenseAnalysisService
 
         decimal result = Math.Round((totalExpense.Data - lastWeekTotalExpense) / lastWeekTotalExpense * 100, 2);
 
-        return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated last week expenses");
+        return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated total percentage change since last week");
     }
 
     public async Task<DataResponse<decimal>> GetTaxPercentageChangeSinceLastWeekAsync()
@@ -68,7 +68,7 @@ public class ExpenseAnalysisService : IExpenseAnalysisService
 
         decimal result = Math.Round((totalExpense.Data - lastWeekTotalExpense) / lastWeekTotalExpense * 100, 2);
 
-        return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated last week expenses");
+        return DataResponse<decimal>.CreateSuccessResponse(result, "Success", "Successfully calculated percentage change in taxes since last week");
     }
 
     public async Task<DataResponse<IDictionary<string, MonthlyExpenseSummary>>> GetExpenseHistory()
@@ -126,7 +126,7 @@ public class ExpenseAnalysisService : IExpenseAnalysisService
         DateOnly today = DateOnly.FromDateTime(DateTime.Now);
 
         // today - one week
-        DateOnly start = today.AddDays(-6);
+        DateOnly start = today.AddDays(-7);
 
         decimal result = 0;
         foreach (var receipt in receipts)

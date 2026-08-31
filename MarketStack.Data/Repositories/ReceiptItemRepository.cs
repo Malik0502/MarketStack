@@ -12,6 +12,7 @@ public class ReceiptItemRepository : IReceiptItemRepository
     {
         _context = context;
     }
+
     public async Task<ICollection<ReceiptItem>> GetReceiptItemsAsync()
     {
         return await _context.ReceiptItem.ToListAsync();
