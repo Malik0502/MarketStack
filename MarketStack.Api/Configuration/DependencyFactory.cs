@@ -62,7 +62,7 @@ public static class DependencyFactory
     {
         builder.Services.AddScoped<IReceiptLibraryService, ReceiptLibraryService>();
         builder.Services.AddScoped<IReceiptImportService, ReceiptImportService>();
-        builder.Services.AddScoped<IPriceAnalysisService, PriceAnalysisService>();
+        builder.Services.AddScoped<IExpenseAnalysisService, ExpenseAnalysisService>();
 
         return builder;
     }

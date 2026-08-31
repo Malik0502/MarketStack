@@ -6,12 +6,12 @@ using MarketStack.Logic.Contracts.Service;
 
 namespace MarketStack.Logic.Service;
 
-public class PriceAnalysisService : IPriceAnalysisService
+public class ExpenseAnalysisService : IExpenseAnalysisService
 {
     private readonly IReceiptPriceSummaryRepository _priceSummaryRepository;
     private readonly IReceiptRepository _receiptRepository;
 
-    public PriceAnalysisService(IReceiptPriceSummaryRepository priceSummaryRepository, IReceiptRepository receiptRepository)
+    public ExpenseAnalysisService(IReceiptPriceSummaryRepository priceSummaryRepository, IReceiptRepository receiptRepository)
     {
         _priceSummaryRepository = priceSummaryRepository;
         _receiptRepository = receiptRepository;

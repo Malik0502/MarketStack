@@ -3,7 +3,7 @@ using MarketStack.Logic.Contracts.Dto;
 
 namespace MarketStack.Logic.Contracts.Service;
 
-public interface IPriceAnalysisService
+public interface IExpenseAnalysisService
 {
     public Task<DataResponse<decimal>> GetTotalExpensesAsync();
 

@@ -6,23 +6,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace MarketStack.Api.Controller;
 
-[Route("api/receipt")]
+[Route("api/expense")]
 [ApiController]
-public class ReceiptController : ControllerBase
+public class ExpenseController : ControllerBase
 {
-    private readonly IPriceAnalysisService _priceAnalysisService;
+    private readonly IExpenseAnalysisService _expenseAnalysisService;
 
-    public ReceiptController(IPriceAnalysisService priceAnalysisService)
+    public ExpenseController(IExpenseAnalysisService expenseAnalysisService)
     {
-        _priceAnalysisService = priceAnalysisService;
+        _expenseAnalysisService = expenseAnalysisService;
     }
 
-    [HttpGet("total-expenses")]
+    [HttpGet("total")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<decimal>>> GetTotalExpenses()
     {
-        DataResponse<decimal> result = await _priceAnalysisService.GetTotalExpensesAsync();
+        DataResponse<decimal> result = await _expenseAnalysisService.GetTotalExpensesAsync();
 
         if (!result.Success)
         {
@@ -33,12 +33,12 @@ public class ReceiptController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("total-tax-expenses")]
+    [HttpGet("total-tax")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<decimal>>> GetTotalTaxExpenses()
     {
-        DataResponse<decimal> result = await _priceAnalysisService.GetTotalTaxExpensesAsync();
+        DataResponse<decimal> result = await _expenseAnalysisService.GetTotalTaxExpensesAsync();
 
         if (!result.Success)
         {
@@ -54,7 +54,7 @@ public class ReceiptController : ControllerBase
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetPercentageChangeSinceLastWeek()
     {
-        DataResponse<decimal> result = await _priceAnalysisService.GetPercentageChangeSinceLastWeekAsync();
+        DataResponse<decimal> result = await _expenseAnalysisService.GetPercentageChangeSinceLastWeekAsync();
 
         if (!result.Success)
         {
@@ -70,7 +70,7 @@ public class ReceiptController : ControllerBase
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetTaxPercentageChangeSinceLastWeek()
     {
-        DataResponse<decimal> result = await _priceAnalysisService.GetTaxPercentageChangeSinceLastWeekAsync();
+        DataResponse<decimal> result = await _expenseAnalysisService.GetTaxPercentageChangeSinceLastWeekAsync();
 
         if (!result.Success)
         {
@@ -81,12 +81,12 @@ public class ReceiptController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("expense-history")]
+    [HttpGet("history")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetExpenseHistory()
     {
-        DataResponse<IDictionary<string, MonthlyExpenseSummary>> result = await _priceAnalysisService.GetExpenseHistory();
+        DataResponse<IDictionary<string, MonthlyExpenseSummary>> result = await _expenseAnalysisService.GetExpenseHistory();
 
         if (!result.Success)
         {
@@ -97,12 +97,12 @@ public class ReceiptController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("tax-expense-history")]
+    [HttpGet("tax-history")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status502BadGateway)]
     public async Task<ActionResult<DataResponse<IDictionary<string, MonthlyExpenseSummary>>>> GetTaxExpenseHistory()
     {
-        DataResponse<IDictionary<string, MonthlyExpenseSummary>> result = await _priceAnalysisService.GetTaxExpenseHistory();
+        DataResponse<IDictionary<string, MonthlyExpenseSummary>> result = await _expenseAnalysisService.GetTaxExpenseHistory();
 
         if (!result.Success)
         {
